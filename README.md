@@ -31,5 +31,7 @@ pnpm run build
 改完代码后先 `pnpm run check`（类型检查加构建），再**先 remove 后 add**：版本号不变时 pnpm 认为已是最新，不会重新复制文件。
 
 ```bash
-"D:\DSH官端esourcesuntime\cliin\dsh.cmd" plugin --profile desktop remove @see-sol-lab/dsh-qol
+"D:\DSH官端
+esources
+"D:\DSH官端\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop remove @see-sol-lab/dsh-qol
 ```
