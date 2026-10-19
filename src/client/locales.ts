@@ -19,6 +19,11 @@ export const zh = {
   'state.unavailable': '这一项现在读不到，生活质量包的后台部分可能没有加载成功。',
   'state.readonly': '这一项被更高层的配置锁定了，这里改不了。',
   'error.save': '没存上，已恢复成之前的状态。',
+  'lowLabel.title': '沙箱 Low 标签',
+  'lowLabel.intro1': '官方沙箱会给用过的工作区打上 Low 完整性标签并一直保留，好处是大仓库下次不用重新授权。代价是这个文件夹里的程序（Electron、打包工具、自己编译的程序、项目里的 Python 虚拟环境）都会以低权限启动，常见症状是起不来、打不了包、删不掉 dist。该问题已经被用户多次报成 BUG，很影响开发。',
+  'lowLabel.intro2': '本插件提供撤销 Low 标签的选项，如果你同时用 Codex、Claude Code 等其他工具，或者经常打包、运行桌面程序，建议打开该选项开关。打开后，DSH 每次启动和退出时会撤掉这些标签；DSH 运行期间标签仍在。',
+  'item.lowLabel': '启动和退出时撤掉 Low 标签',
+  'item.lowLabel.desc': '只撤官方沙箱加的三样：沙箱身份的写入授权、Everyone 的禁止删除子项、Low 标签（改回 Medium）。其他权限不动，撤之前先备份到 DSH 目录下的 deepseekgui/acl-backups。',
 } as const
 
 export type QolLocaleKey = keyof typeof zh
@@ -42,4 +47,9 @@ export const en: Record<QolLocaleKey, string> = {
   'state.unavailable': 'This setting cannot be read right now; the QoL Pack background part may have failed to load.',
   'state.readonly': 'A higher configuration layer locks this one; it cannot be changed here.',
   'error.save': 'Not saved; restored the previous state.',
+  'lowLabel.title': 'Sandbox Low label',
+  'lowLabel.intro1': 'The official sandbox puts a Low integrity label on every workspace it has used and keeps it, so a large repository does not need to be granted again next time. The cost: programs in that folder (Electron, packaging tools, programs you compile, a Python virtual environment inside the project) start at low integrity, and typically fail to launch, fail to package, or cannot delete dist. Users have reported this as a bug many times; it gets in the way of development.',
+  'lowLabel.intro2': 'This plugin can remove the Low label. If you also use Codex, Claude Code or other tools, or often package or run desktop programs, turn this on. When it is on, DSH removes these marks each time it starts and exits; while DSH is running the label is still there.',
+  'item.lowLabel': 'Remove the Low label at start and exit',
+  'item.lowLabel.desc': 'Removes only the three things the official sandbox adds: the sandbox identity write grant, the Everyone deny-delete-children entry, and the Low label (back to Medium). Other permissions are untouched; a backup goes to deepseekgui/acl-backups under the DSH home first.',
 }

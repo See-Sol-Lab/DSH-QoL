@@ -54,7 +54,7 @@ await build({
   target: 'node22',
   // 普通 npm 库也用官方运行时自带的（已核对 app.asar 里有）。
   external: ['zod', 'yaml', 'fflate'],
-  loader: { '.md': 'text' },
+  loader: { '.md': 'text', '.ps1': 'text' },
   plugins: [resolveOwn],
   logLevel: 'info',
 })

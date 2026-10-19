@@ -30,10 +30,12 @@ type Values = Record<string, unknown>
 
 /** 一行开关：Host 条目、字段、怎么判断「开」、打开时写什么。 */
 interface Item {
-  key: 'analytics' | 'sessionLog' | 'inventory' | 'feedback'
+  key: 'analytics' | 'sessionLog' | 'inventory' | 'feedback' | 'lowLabel'
   entry: string
   field: string
   onValue: unknown
+  /** 默认开的开关：关 = 写这个值，开 = 去掉覆盖回到默认。没有则反过来（默认关）。 */
+  offValue?: unknown
   isOn: (value: Values) => boolean
 }
 
@@ -45,6 +47,12 @@ const ITEMS: readonly Item[] = [
   { key: 'inventory', entry: 'dsh-qol', field: 'inventory', onValue: true, isOn: v => v['inventory'] === true },
   { key: 'feedback', entry: 'dsh-qol', field: 'feedback', onValue: true, isOn: v => v['feedback'] === true },
 ]
+
+/** 沙箱 Low 标签撤销：本包自己的 volatile 字段，默认开（Host 面见 src/low-label.ts）。 */
+const LOW_LABEL_ITEM: Item = {
+  key: 'lowLabel', entry: 'dsh-qol', field: 'revokeLowLabel', onValue: true, offValue: false,
+  isOn: v => v['revokeLowLabel'] !== false,
+}
 
 const S = {
   section: { display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '14px', lineHeight: '22px', color: 'var(--dsw-alias-label-primary)' },
@@ -111,7 +119,9 @@ function ItemRow(props: { ctx: Context; t: T; item: Item; first: boolean }): Rea
           setBusy(true)
           setFailed(false)
           // 关 = 去掉用户覆盖，回到本包组合层的「关」；开 = 写一个值。
-          const write = on ? form.unset(item.field) : form.set(item.field, item.onValue)
+          const write = item.offValue === undefined
+            ? (on ? form.unset(item.field) : form.set(item.field, item.onValue))
+            : (on ? form.set(item.field, item.offValue) : form.unset(item.field))
           write.then(ok => { if (!ok) setFailed(true) }, () => { setFailed(true) })
             .finally(() => { setBusy(false) })
         }}
@@ -142,6 +152,12 @@ function makeSection(ctx: Context, t: T): () => ReactElement {
           {ITEMS.map((item, i) => <ItemRow key={item.key} ctx={ctx} t={t} item={item} first={i === 0} />)}
         </div>
         <div style={S.note}>{t('privacy.uninstall')}</div>
+        <div style={{ ...S.title, marginTop: 12 }}>{t('lowLabel.title')}</div>
+        <div style={S.note}>{t('lowLabel.intro1')}</div>
+        <div style={S.note}>{t('lowLabel.intro2')}</div>
+        <div style={S.card}>
+          <ItemRow ctx={ctx} t={t} item={LOW_LABEL_ITEM} first />
+        </div>
       </div>
     )
   }

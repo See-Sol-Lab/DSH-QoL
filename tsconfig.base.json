@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": [
+      "ES2023",
+      "DOM"
+    ],
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "experimentalDecorators": false,
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@deepseek-ai/dsh-git": [
+        "./src/host/git/index.ts"
+      ],
+      "@deepseek-ai/dsh-git/types": [
+        "./src/host/git/types.ts"
+      ],
+      "@deepseek-ai/dsh-pull-request": [
+        "./src/host/pull-request/index.ts"
+      ],
+      "@deepseek-ai/dsh-pull-request/types": [
+        "./src/host/pull-request/types.ts"
+      ],
+      "@see-sol-lab/dsh-qol/types": [
+        "./src/host/workbench-inspector/types.ts"
+      ],
+      "@see-sol-lab/dsh-qol/remote": [
+        "./src/generated/typert.remote-client.d.ts"
+      ]
+    },
+    "allowJs": false
+  }
+}

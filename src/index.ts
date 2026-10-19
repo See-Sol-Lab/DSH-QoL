@@ -17,6 +17,10 @@ import z from '@deepseek-ai/schemastery'
 import { AsyncResource } from 'node:async_hooks'
 // Type-only: the ctx.configEditor merge.
 import type {} from '@deepseek-ai/dsh-config-editor'
+// Type-only: the ctx.workspaceRegistry merge.
+import type {} from '@deepseek-ai/dsh-workspace'
+import { defaultDshHome } from '@deepseek-ai/dsh-home-paths'
+import { revokeLowLabels, revokeLowLabelsSync } from './low-label.ts'
 
 export const name = 'dsh-qol'
 export const inject = ['configEditor']
@@ -25,14 +29,17 @@ export const inject = ['configEditor']
 export interface Config {
   inventory: Volatile<boolean>
   feedback: Volatile<boolean>
+  /** DSH 启动与退出时撤掉官方沙箱留在工作区上的 Low 标签。默认开。 */
+  revokeLowLabel: Volatile<boolean>
 }
 
 export const Config = z.object({
   inventory: z.boolean().default(false).volatile(),
   feedback: z.boolean().default(false).volatile(),
+  revokeLowLabel: z.boolean().default(true).volatile(),
 })
 
-type Key = keyof Config
+type Key = 'inventory' | 'feedback'
 
 /** 本包字段 → 官方条目、字段、开 / 关时的值。 */
 const TARGETS: Record<Key, { entry: string; field: string; on: unknown; off: unknown }> = {
@@ -76,4 +83,49 @@ export function apply(ctx: Context, config: Config): void {
   ctx.on('loader/volatile-update', () => { outside(sync) })
   // 启动时也对齐一次：开关与官方条目不一致时（上次同步失败、手改过配置）自动补上。
   outside(sync)
+
+  if (process.platform === 'win32') applyLowLabelRevoke(ctx, config)
+}
+
+/** 进程级的退出清理状态：每次 apply 刷新，退出钩子只注册一次。 */
+interface ExitState { enabled: () => boolean; roots: () => readonly string[]; home: string }
+const EXIT_STATE = Symbol.for('dsh-qol.low-label.exit')
+type GlobalWithExit = typeof globalThis & { [EXIT_STATE]?: ExitState }
+
+function dshHome(): string {
+  const home = process.env.DSH_HOME
+  return home === undefined || home === '' ? defaultDshHome() : home
+}
+
+/**
+ * Low 标签撤销：Host 启动时清一遍已登记的工作区；Host 进程真正退出时再清一遍。
+ * 退出钩子挂在 process 'exit' 上而不是插件卸载上：Host 关闭时会先卸载插件、后退出
+ * 进程，而插件在运行中被关掉或重装时 Host 还在跑——那时撤掉，官方沙箱内存里以为
+ * 授权还在，后续命令会报权限错误。
+ * @param ctx - 插件上下文。
+ * @param config - 本包配置（revokeLowLabel 开关）。
+ */
+function applyLowLabelRevoke(ctx: Context, config: Config): void {
+  ctx.inject(['workspaceRegistry'], (scoped) => {
+    const roots = (): string[] => scoped.workspaceRegistry.list().map(workspace => workspace.path)
+    const home = dshHome()
+    const state = globalThis as GlobalWithExit
+    const first = state[EXIT_STATE] === undefined
+    // 记下最后一次看到的工作区列表：退出时注册表可能已经卸载了。
+    let lastRoots: readonly string[] = roots()
+    state[EXIT_STATE] = { enabled: () => config.revokeLowLabel.get() !== false, roots: () => { try { lastRoots = roots() } catch { /* 已卸载 */ } return lastRoots }, home }
+    if (first) {
+      process.once('exit', () => {
+        const current = (globalThis as GlobalWithExit)[EXIT_STATE]
+        if (current === undefined || !current.enabled()) return
+        revokeLowLabelsSync(current.roots(), current.home)
+      })
+    }
+    if (config.revokeLowLabel.get() === false) return
+    void revokeLowLabels(roots(), home).then((results) => {
+      const changed = results.filter(result => result.marked)
+      if (changed.length > 0) console.info(`[dsh-qol] revoked sandbox Low labels on ${changed.map(result => result.root).join(', ')}`)
+      for (const result of results) if (result.error !== null) console.warn(`[dsh-qol] Low label revoke failed for ${result.root}: ${result.error}`)
+    })
+  })
 }
