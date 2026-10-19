@@ -20,7 +20,7 @@ import type {} from '@deepseek-ai/dsh-config-editor'
 // Type-only: the ctx.workspaceRegistry merge.
 import type {} from '@deepseek-ai/dsh-workspace'
 import { defaultDshHome } from '@deepseek-ai/dsh-home-paths'
-import { revokeLowLabels, revokeLowLabelsSync } from './low-label.ts'
+import { collectRoots, revokeLowLabels, revokeLowLabelsSync } from './low-label.ts'
 
 export const name = 'dsh-qol'
 export const inject = ['configEditor']
@@ -107,8 +107,8 @@ function dshHome(): string {
  */
 function applyLowLabelRevoke(ctx: Context, config: Config): void {
   ctx.inject(['workspaceRegistry'], (scoped) => {
-    const roots = (): string[] => scoped.workspaceRegistry.list().map(workspace => workspace.path)
     const home = dshHome()
+    const roots = (): string[] => collectRoots(home, scoped.workspaceRegistry.list().map(workspace => workspace.path))
     const state = globalThis as GlobalWithExit
     const first = state[EXIT_STATE] === undefined
     // 记下最后一次看到的工作区列表：退出时注册表可能已经卸载了。

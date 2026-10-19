@@ -443,8 +443,13 @@ export class WorkbenchInspector extends TypertRemoteService {
     if (this.liveSessions === undefined || this.liveSessions.get(sessionId) !== undefined) {
       throw new RemoteError('workbench/session-busy', 'the session is still loaded; restart the app and try again', {})
     }
-    const directory = findSessionDirectory(join(requiredHome(), 'sessions'), sessionId)
+    const home = requiredHome()
+    const directory = findSessionDirectory(join(home, 'sessions'), sessionId)
+    // 先从官方归档集合里拿掉（官方没有「忘掉某个 id」，取消归档是唯一的写法）；失败不挡删除。
+    try { await registry.unarchiveSession(sessionId) } catch { /* 留在归档集合里也无害：读不到会话就跳过 */ }
     rmSync(directory, { recursive: true, force: false })
+    // 官方会话投影缓存里这个会话的那一份（只读缓存，删掉无害）。
+    rmSync(join(home, 'storages', 'session_projcache', 'sessions', `${sessionId}.json`), { force: true })
     this.ctx.emit('api-session/removed', sessionId)
   }
 

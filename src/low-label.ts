@@ -8,10 +8,67 @@
  */
 
 import { execFile, execFileSync } from 'node:child_process'
-import { mkdirSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { EOL, tmpdir } from 'node:os'
+import { join, sep } from 'node:path'
 import SCRIPT from '../assets/revoke-low-label.ps1'
+
+/**
+ * 收集要检查的工作区根目录：官方注册表里的工作区、官方会话投影缓存里出现过的会话工作
+ * 目录（工作区被移出注册表后也还在），以及本插件以前见过的目录（只增不减，存在
+ * `<home>/deepseekgui/low-label-roots.json`）。合并后写回记录。
+ * @param home - DSH home。
+ * @param registered - 注册表里当前的工作区路径。
+ * @returns 去重后的目录（仍存在的）。
+ */
+function trimSeparators(path: string): string {
+  let end = path.length
+  while (end > 0 && (path[end - 1] === '/' || path[end - 1] === sep)) end -= 1
+  return path.slice(0, end)
+}
+
+/** 在会话投影缓存的 JSON 里找第一个字符串型的 cwd 字段（结构是官方内部的，不依赖具体层级）。 */
+function findCwd(value: unknown): string | undefined {
+  if (value === null || typeof value !== 'object') return undefined
+  const record = value as Record<string, unknown>
+  if (typeof record['cwd'] === 'string') return record['cwd']
+  for (const child of Object.values(record)) {
+    const found = findCwd(child)
+    if (found !== undefined) return found
+  }
+  return undefined
+}
+
+export function collectRoots(home: string, registered: readonly string[]): string[] {
+  const seen = new Map<string, string>()
+  const add = (path: unknown): void => {
+    if (typeof path !== 'string' || path === '') return
+    const trimmed = trimSeparators(path)
+    const key = trimmed.toLowerCase()
+    if (!seen.has(key)) seen.set(key, trimmed)
+  }
+  for (const path of registered) add(path)
+  const cacheDir = join(home, 'storages', 'session_projcache', 'sessions')
+  try {
+    for (const name of readdirSync(cacheDir)) {
+      if (!name.endsWith('.json')) continue
+      try {
+        add(findCwd(JSON.parse(readFileSync(join(cacheDir, name), 'utf8'))))
+      } catch { /* 读不了的缓存跳过 */ }
+    }
+  } catch { /* 还没有缓存目录 */ }
+  const memory = join(home, 'deepseekgui', 'low-label-roots.json')
+  try {
+    const remembered: unknown = JSON.parse(readFileSync(memory, 'utf8'))
+    if (Array.isArray(remembered)) for (const path of remembered) add(path)
+  } catch { /* 第一次 */ }
+  const all = [...seen.values()]
+  try {
+    mkdirSync(join(home, 'deepseekgui'), { recursive: true })
+    writeFileSync(memory, `${JSON.stringify(all, null, 2)}${EOL}`, 'utf8')
+  } catch { /* 记录失败不影响清理 */ }
+  return all.filter(path => existsSync(path))
+}
 
 /** 一个工作区的清理结果（脚本输出的那行 JSON）。 */
 export interface LowLabelResult {
