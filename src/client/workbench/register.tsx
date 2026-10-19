@@ -23,12 +23,20 @@ import { createWorkbenchDesk } from './desk.ts'
 import { NS_TOOLS, en as toolsEn, zh as toolsZh, type ToolsKey } from './locales-tools.ts'
 import { NS_INSPECTOR, en as inspectorEn, zh as inspectorZh, type InspectorKey } from './locales-inspector.ts'
 import { NS_MEMORY, en as memoryEn, zh as memoryZh, type MemoryKey } from './locales-memory.ts'
+import { en as workbenchEn, zh as workbenchZh, type WorkbenchKey } from './locales-workbench.ts'
+import { ArchivedSessionsSection } from './ArchivedSessionsSection.tsx'
+import { createSessionExporter, ExportSessionDialog, ExportSessionMenuItem } from './session-export.tsx'
+// Type-only: ctx.uiWorkspace（恢复与打开会话）。
+import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
+// Type-only: the shell.overlay slot.
+import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     'dsh.qol.tools': ToolsKey
     'dsh.qol.inspector': InspectorKey
     'dsh.qol.memory': MemoryKey
+    'dsh.qol.workbench': WorkbenchKey
   }
 }
 
@@ -47,9 +55,13 @@ const VIEWS = [
 
 const MEMORY_VIEW_ORDER = 23
 const MEMORY_SECTION_ORDER = 46
+/** 已归档会话分区：排在官方分区之后、我们其他分区之前。 */
+const ARCHIVED_SECTION_ORDER = 30
+/** 会话菜单里「导出」的位置：官方的归档（400）之后。 */
+const EXPORT_MENU_ORDER = 450
 
 /** 工作台需要的官方服务。 */
-export const workbenchInject = ['slots', 'locale', 'remote', 'sessions', 'conversation'] as const
+export const workbenchInject = ['slots', 'locale', 'remote', 'sessions', 'conversation', 'uiWorkspace'] as const
 
 /**
  * 挂上工作台：远程客户端、文案、三个标签、全局记忆分区与工具卡片。
@@ -61,6 +73,7 @@ export async function applyWorkbench(ctx: Context): Promise<void> {
   ctx.effect(() => ctx.locale.register(NS_TOOLS, { zh: toolsZh, en: toolsEn }), 'dsh-qol: tool dictionaries')
   ctx.effect(() => ctx.locale.register(NS_INSPECTOR, { zh: inspectorZh, en: inspectorEn }), 'dsh-qol: inspector dictionaries')
   ctx.effect(() => ctx.locale.register(NS_MEMORY, { zh: memoryZh, en: memoryEn }), 'dsh-qol: memory dictionaries')
+  ctx.effect(() => ctx.locale.register('dsh.qol.workbench', { zh: workbenchZh, en: workbenchEn }), 'dsh-qol: workbench dictionaries')
   const t = ctx.locale.bind(NS_INSPECTOR)
   const tm = ctx.locale.bind(NS_MEMORY)
   // 插槽回调给的是普通字符串的会话 ID；发指令要带品牌的 SessionId。
@@ -72,6 +85,22 @@ export async function applyWorkbench(ctx: Context): Promise<void> {
       yield ctx.slots.register({ name: 'tool.call.toolview', key, locale: NS_TOOLS, inject: instructions }, GitPrToolRow)
     }
   })
+
+  // 设置「已归档的会话」：单独列出归档，恢复走官方 uiWorkspace。删除要等插件后台的
+  // 删除通道做好（第 5 步），在那之前不传删除函数，删除按钮不显示。
+  ctx.slots.inject('settings.section', () =>
+    ctx.slots.register({
+      name: 'settings.section',
+      id: 'dsh-qol-archived',
+      order: ARCHIVED_SECTION_ORDER,
+      locale: 'dsh.qol.workbench',
+      label: () => ctx.locale.bind('dsh.qol.workbench')('archived.nav'),
+      inject: () => ({
+        restore: (sessionId: SessionId) => ctx.uiWorkspace.unarchiveSession(sessionId),
+        open: (sessionId: SessionId): void => { ctx.uiWorkspace.openSession(sessionId) },
+        deleteSession: null,
+      }),
+    }, ArchivedSessionsSection))
 
   // 标签与设置分区要拿到 remote.workbenchInspector 子服务：Cordis 只把它交给声明了
   // 它的作用域，而挂载发生在 apply 里，所以在这里开一个子作用域。
@@ -107,5 +136,24 @@ export async function applyWorkbench(ctx: Context): Promise<void> {
         label: () => tm('nav.memory'),
         inject: () => ({ desk }),
       }, MemorySettingsSection))
+
+    // 会话菜单「导出为 Markdown」：菜单项写入待导出请求，对话框挂在整页浮层里（菜单关了它还在）。
+    // 导出语言跟界面语言：界面文案是中文就导出中文标签。
+    const exporter = createSessionExporter(inspector, () => /[一-鿿]/u.test(t('view.memory')) ? 'zh' : 'en')
+    scoped.slots.inject('sidebar.workspaces.session.menu.item', () =>
+      scoped.slots.register({
+        name: 'sidebar.workspaces.session.menu.item',
+        id: 'dsh-qol-export',
+        locale: 'dsh.qol.workbench',
+        order: EXPORT_MENU_ORDER,
+        inject: () => ({ exporter }),
+      }, ExportSessionMenuItem))
+    scoped.slots.inject('shell.overlay', () =>
+      scoped.slots.register({
+        name: 'shell.overlay',
+        id: 'dsh-qol-session-export',
+        locale: 'dsh.qol.workbench',
+        inject: () => ({ exporter }),
+      }, ExportSessionDialog))
   })
 }
