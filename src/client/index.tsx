@@ -15,6 +15,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type { ConfigForm, ConfigFormSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 import { en, zh, type QolLocaleKey } from './locales.ts'
 import { applyWorkbench, workbenchInject } from './workbench/register.tsx'
+import { applyNotify } from './notify/register.tsx'
 import { applySkills } from './skills/register.tsx'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -190,6 +191,12 @@ export async function apply(ctx: Context): Promise<void> {
     await applyWorkbench(ctx)
   } catch (error) {
     console.error(`[dsh-qol] workbench failed: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  // 系统通知：待审批、助手提问、后台工作完成或失败。
+  try {
+    applyNotify(ctx)
+  } catch (error) {
+    console.error(`[dsh-qol] notify failed: ${error instanceof Error ? error.message : String(error)}`)
   }
   // 技能库：远程接口由上面的工作台挂载（同一份描述），所以排在它之后。
   try {
