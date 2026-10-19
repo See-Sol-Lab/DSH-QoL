@@ -21,6 +21,9 @@ import type {} from '@deepseek-ai/dsh-config-editor'
 import type {} from '@deepseek-ai/dsh-workspace'
 // Type-only: the ctx.systemPrompt merge.
 import type {} from '@deepseek-ai/dsh-system-prompt'
+// Type-only: the ctx.llm merge.
+import type {} from '@deepseek-ai/dsh-llm'
+import { registerModelSight } from './host/model-sight.ts'
 import { defaultDshHome } from '@deepseek-ai/dsh-home-paths'
 import { collectRoots, revokeLowLabels, revokeLowLabelsSync } from './low-label.ts'
 import { EOL } from 'node:os'
@@ -88,6 +91,9 @@ export function apply(ctx: Context, config: Config): void {
   ctx.on('loader/volatile-update', () => { outside(sync) })
   // 启动时也对齐一次：开关与官方条目不一致时（上次同步失败、手改过配置）自动补上。
   outside(sync)
+
+  // 每步告诉助手当前模型能不能看图（换成纯文本模型后别反复截图）。
+  ctx.inject(['llm'], (scoped) => { registerModelSight(scoped, scoped.llm) })
 
   if (process.platform === 'win32') {
     applyLowLabelRevoke(ctx, config)
