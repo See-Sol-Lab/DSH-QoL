@@ -28,6 +28,20 @@ export interface WorkbenchMemory {
   agents: boolean
 }
 
+/**
+ * DSH-QoL：全局记忆 `<DSH home>/memory.md`（原由 DeepSeekGUI 主进程提供）。
+ * 不存在 = 空串；读不到或超过上限 = null（此时保存一律拒绝）。
+ */
+export interface WorkbenchGlobalMemory {
+  /** 生效的 DSH home。 */
+  home: string
+  /** 全文；读不到或太大时为 null。 */
+  text: string | null
+}
+
+/** DSH-QoL：创建项目 AGENTS.md 用的模板语言。 */
+export type WorkbenchSeedLocale = 'zh' | 'en'
+
 /** Complete bounded text from a workspace or repository file. */
 export interface WorkbenchFileText {
   path: string

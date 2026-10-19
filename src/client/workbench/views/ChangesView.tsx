@@ -1,0 +1,96 @@
+/**
+ * Changes view (D5-d/D5-f, 2026-09-06): what the assistant changed in this
+ * workspace, file by file, read straight from Git without a model call. The
+ * only actions are harmless: reveal a file in the file manager, copy its
+ * path, open the workspace. Commit, discard, and revert stay in the
+ * conversation (D10).
+ */
+import { useState } from 'react'
+import type { DiffResult, StatusEntry } from '@deepseek-ai/dsh-git/types'
+import type { WorkbenchFileText, WorkbenchRepository } from '@see-sol-lab/dsh-qol/types'
+import { button, BUTTON_CLASS, caption, mono, ReadStatus, TextView, Toolbar, useRead, view, type ViewProps } from './shared.tsx'
+
+const GROUPS = ['staged', 'unstaged', 'untracked', 'conflict'] as const
+
+/** Repository-relative path joined onto the Git root for the clipboard. */
+function absolutePath(root: string, path: string): string {
+  const separator = root.includes('\\') ? '\\' : '/'
+  return `${root.replace(/[\\/]+$/u, '')}${separator}${path.replace(/\//gu, separator)}`
+}
+
+export function ChangesView({ inspector, sessionId, t }: ViewProps) {
+  const [selected, setSelected] = useState<StatusEntry | null>(null)
+  const [copied, setCopied] = useState<string | null>(null)
+  const [owner, setOwner] = useState(sessionId)
+  const read = useRead<WorkbenchRepository | WorkbenchFileText | DiffResult>(
+    selected === null ? 'status' : `${selected.kind}:${selected.path}`,
+    async (id, signal) => selected === null
+      ? await inspector.status(id, signal)
+      : selected.kind === 'untracked'
+        ? await inspector.text(id, selected.path, true, signal)
+        : await inspector.diff(id, selected.kind === 'staged' ? 'staged' : 'unstaged', selected.path, signal),
+    sessionId,
+  )
+  const repository = read.value !== undefined && 'status' in read.value ? read.value : undefined
+  const text = read.value !== undefined && 'text' in read.value ? read.value.text
+    : read.value !== undefined && 'files' in read.value ? read.value.patch ?? '' : undefined
+  const [root, setRoot] = useState('')
+  if (owner !== sessionId) {
+    setOwner(sessionId)
+    setSelected(null)
+    setCopied(null)
+    setRoot('')
+  }
+  if (repository !== undefined && repository.root !== root) setRoot(repository.root)
+
+  const copy = (path: string): void => {
+    void navigator.clipboard?.writeText(absolutePath(root, path)).then(() => {
+      setCopied(path)
+      setTimeout(() => setCopied(current => (current === path ? null : current)), 1500)
+    }).catch(() => undefined)
+  }
+  // DSH-QoL：「在文件管理器中定位」要桌面外壳，官方桌面端里不提供；复制路径照常。
+
+  return (
+    <section style={view} aria-label={t('view.changes')}>
+      <Toolbar t={t} refresh={read.refresh}>
+        {selected !== null && <button type="button" className={BUTTON_CLASS} style={button} onClick={() => setSelected(null)}>{t('changes.back')}</button>}
+      </Toolbar>
+      <ReadStatus state={read} t={t} />
+      {repository !== undefined && (
+        <>
+          <div style={caption}>{t('changes.branch')} {repository.status.head.name || repository.status.head.kind}</div>
+          {repository.status.clean && <p style={{ margin: 0 }}>{t('changes.clean')}</p>}
+          {GROUPS.map((kind) => {
+            const entries = repository.status.entries.flatMap(entry => entry.kind === kind ? [entry]
+              : kind === 'unstaged' && entry.kind === 'staged' && entry.y !== '.' ? [{ ...entry, kind: 'unstaged' as const }] : [])
+            if (entries.length === 0) return null
+            return (
+              <div key={kind}>
+                <div style={{ ...caption, marginTop: 6 }}>{t(`changes.group.${kind}`)} · {entries.length}</div>
+                {entries.map((entry, index) => (
+                  <div key={`${entry.kind}/${entry.path}/${index}`} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                    <button
+                      type="button"
+                      className={BUTTON_CLASS}
+                      style={{ ...button, ...mono, flex: 1, textAlign: 'left', color: 'var(--dsw-alias-label-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                      onClick={() => setSelected(entry)}
+                    >
+                      {entry.path}{entry.origPath !== undefined ? ` ← ${entry.origPath}` : ''}
+                    </button>
+                    <button type="button" className={BUTTON_CLASS} style={button} onClick={() => copy(entry.path)}>
+                      {copied === entry.path ? t('changes.copied') : t('changes.copyPath')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
+        </>
+      )}
+      {selected !== null && <p style={{ ...mono, margin: 0 }}>{t(`changes.group.${selected.kind}`)} · {selected.path}</p>}
+      {text !== undefined && <TextView text={text === '' ? t('changes.noPatch') : text} />}
+      <p style={{ ...caption, margin: 0 }}>{t('changes.scope')}</p>
+    </section>
+  )
+}

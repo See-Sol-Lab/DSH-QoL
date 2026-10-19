@@ -72,10 +72,16 @@ const client = await build({
   format: 'cjs',
   platform: 'browser',
   target: 'es2022',
-  jsx: 'transform',
-  external: ['react', '@deepseek-ai/*'],
+  jsx: 'automatic',
+  // 官方 client 运行时的 require 提供这几样；其余（含生成的远程接口描述与它用到的
+  // typert-protocol/remote-info）打进 client.js，与 DeepSeekGUI 的产物一致。
+  external: ['react', 'react/jsx-runtime', 'zod', '@deepseek-ai/dsh-client-ui-primitives'],
+  alias: { '@see-sol-lab/dsh-qol/remote': join(src, 'generated', 'typert.remote-client.js') },
+  metafile: true,
   logLevel: 'info',
 })
+const bundledOfficial = Object.keys(client.metafile.inputs).filter(path => path.includes('@deepseek-ai'))
+if (bundledOfficial.length > 0) console.log(['  client bundles official sources:', ...bundledOfficial].join('\n    '))
 const body = client.outputFiles[0].text
 await writeFile(join(root, 'lib', 'client.js'), [
   '// 构建产物，勿手改：源码在 src/client，由 scripts/build.mjs 生成。',

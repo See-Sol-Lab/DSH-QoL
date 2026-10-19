@@ -7,13 +7,14 @@
  * react 从 loader 的 require 里取。
  */
 
-import React, { useState, useSyncExternalStore } from 'react'
+import { useState, useSyncExternalStore, type CSSProperties, type ReactElement } from 'react'
 import type { Context } from '@deepseek-ai/cordis'
 // Type-only: ctx.locale、ctx.configForms 与 settings.section 插槽的类型合并。
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type { ConfigForm, ConfigFormSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 import { en, zh, type QolLocaleKey } from './locales.ts'
+import { applyWorkbench, workbenchInject } from './workbench/register.tsx'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -55,7 +56,7 @@ const S = {
   error: { fontSize: '12px', lineHeight: '18px', color: 'var(--dsw-alias-state-error-primary)' },
   track: { position: 'relative', flex: '0 0 auto', width: '36px', height: '20px', borderRadius: '10px', border: 'none', padding: 0, transition: 'background 120ms' },
   knob: { position: 'absolute', top: '2px', width: '16px', height: '16px', borderRadius: '8px', background: '#fff', transition: 'left 120ms' },
-} satisfies Record<string, React.CSSProperties>
+} satisfies Record<string, CSSProperties>
 
 type T = (key: QolLocaleKey) => string
 
@@ -63,7 +64,7 @@ function useForm(form: ConfigForm<Values>): ConfigFormSnapshot<Values> {
   return useSyncExternalStore(listener => form.subscribe(listener), () => form.getSnapshot())
 }
 
-function Switch(props: { checked: boolean; label: string; disabled: boolean; onToggle: () => void }): React.ReactElement {
+function Switch(props: { checked: boolean; label: string; disabled: boolean; onToggle: () => void }): ReactElement {
   const { checked, disabled } = props
   return (
     <button
@@ -85,7 +86,7 @@ function Switch(props: { checked: boolean; label: string; disabled: boolean; onT
   )
 }
 
-function ItemRow(props: { ctx: Context; t: T; item: Item; first: boolean }): React.ReactElement {
+function ItemRow(props: { ctx: Context; t: T; item: Item; first: boolean }): ReactElement {
   const { ctx, t, item } = props
   const form = ctx.configForms.get<Values>(item.entry)
   const snap = useForm(form)
@@ -94,7 +95,7 @@ function ItemRow(props: { ctx: Context; t: T; item: Item; first: boolean }): Rea
   const label = t(`item.${item.key}`)
 
   let status: string
-  let control: React.ReactElement | null = null
+  let control: ReactElement | null = null
   if (snap.status === 'loading') status = t('state.loading')
   else if (snap.status === 'unavailable') status = t('state.unavailable')
   else {
@@ -130,7 +131,7 @@ function ItemRow(props: { ctx: Context; t: T; item: Item; first: boolean }): Rea
   )
 }
 
-function makeSection(ctx: Context, t: T): () => React.ReactElement {
+function makeSection(ctx: Context, t: T): () => ReactElement {
   return function QolSection() {
     return (
       <div style={S.section}>
@@ -145,13 +146,13 @@ function makeSection(ctx: Context, t: T): () => React.ReactElement {
   }
 }
 
-export const inject = ['slots', 'locale', 'configForms']
+export const inject = [...new Set(['slots', 'locale', 'configForms', ...workbenchInject])]
 
 /**
  * 注册「生活质量包」设置分区。
  * @param ctx - 浏览器侧插件上下文。
  */
-export function apply(ctx: Context): void {
+export async function apply(ctx: Context): Promise<void> {
   // 兜底：本包坏了只能表现为「设置里少了一个分区」，不许拖垮整个界面。
   try {
     ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-qol: dictionaries')
@@ -165,6 +166,12 @@ export function apply(ctx: Context): void {
       locale: NS,
     }, Section))
   } catch (error) {
-    console.error(`[dsh-qol] apply failed: ${error instanceof Error ? error.message : String(error)}`)
+    console.error(`[dsh-qol] privacy section failed: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  // 工作台（三个标签、全局记忆、工具卡片）。同样兜底：坏了只少这部分，不拖垮界面。
+  try {
+    await applyWorkbench(ctx)
+  } catch (error) {
+    console.error(`[dsh-qol] workbench failed: ${error instanceof Error ? error.message : String(error)}`)
   }
 }

@@ -12,13 +12,15 @@ import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typer
 import { renderSessionMarkdown, untitledSessionTitle } from './session-markdown.ts'
 import { ArchiveMemoryRunner, projectFileProblem, routeOf } from './archive-memory-runner.ts'
 import { DEFAULT_LIMITS, type ArchiveMemoryLimits } from './archive-memory.ts'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import AGENTS_PROJECT_ZH from '../../../assets/AGENTS.project.zh.md'
+import AGENTS_PROJECT_EN from '../../../assets/AGENTS.project.en.md'
 import type {} from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-workspace'
 // DSH-QoL：这三个位置保护函数是 DeepSeekGUI 加进官方 sandbox 包的，官方原版没有，随本包搬来。
 import { chatOnlyReason, isElevatedHost, zoneOfPath } from './protected-zones.ts'
-import { projectMemoryFileName, type ArchiveMemoryRecord, type MemoryInjection, type MemorySuggestion, type WorkbenchArchiveMemory, type WorkbenchExportLanguage, type WorkbenchExportMarkdown, type WorkbenchFileText, type WorkbenchLastReply, type WorkbenchMemory, type WorkbenchOverview, type WorkbenchRepository, type WorkbenchSandboxClean, type WorkbenchWorktree } from './types.ts'
+import { projectMemoryFileName, type ArchiveMemoryRecord, type MemoryInjection, type MemorySuggestion, type WorkbenchArchiveMemory, type WorkbenchExportLanguage, type WorkbenchExportMarkdown, type WorkbenchFileText, type WorkbenchGlobalMemory, type WorkbenchLastReply, type WorkbenchMemory, type WorkbenchSeedLocale, type WorkbenchOverview, type WorkbenchRepository, type WorkbenchSandboxClean, type WorkbenchWorktree } from './types.ts'
 
 export type * from './types.ts'
 export { projectMemoryFileName } from './types.ts'
@@ -61,6 +63,8 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'workbench/not-a-repository': { readonly cwd: string }
     /** DSH-QoL：功能依赖 DeepSeekGUI 对官方的改动，官方桌面端里不可用。 */
     'workbench/unsupported': Record<string, never>
+    /** DSH-QoL：保存记忆时文件已被别处改过（助手或其他编辑器），需刷新后再改。 */
+    'workbench/memory-changed': { readonly path: string }
   }
 }
 
@@ -354,6 +358,79 @@ export class WorkbenchInspector extends TypertRemoteService {
     return { cwd, fileName, text, agents }
   }
 
+  // DSH-QoL：下面四个方法原由 DeepSeekGUI 主进程经控制通道完成，官方桌面端没有那条
+  // 通道，搬到这里。路径一律由 Host 从权威事实推出（DSH home、会话记录的 cwd），不接受
+  // 调用方传来的任意路径；这是用户在面板上的主动保存，不经助手的沙箱权限门。
+
+  /**
+   * Read the global memory `<DSH home>/memory.md`.
+   * @param signal - Request cancellation.
+   * @returns the home and its text ('' when absent, null when unreadable or too large).
+   */
+  @Remote
+  async globalMemory(signal: AbortSignal): Promise<WorkbenchGlobalMemory> {
+    signal.throwIfAborted()
+    const home = requiredHome()
+    return { home, text: readMemoryText(join(home, 'memory.md')) }
+  }
+
+  /**
+   * Save the global memory, refusing when the file moved on since the edit began.
+   * @param content - New full text.
+   * @param expected - The text the edit started from.
+   * @param signal - Request cancellation.
+   * @returns completion after the atomic write.
+   */
+  @Remote
+  async saveGlobalMemory(content: string, expected: string, signal: AbortSignal): Promise<void> {
+    signal.throwIfAborted()
+    const path = join(requiredHome(), 'memory.md')
+    if (readMemoryText(path) !== expected) {
+      throw new RemoteError('workbench/memory-changed', 'The global memory file changed. Reopen it before saving.', { path })
+    }
+    atomicWriteText(path, content)
+  }
+
+  /**
+   * Save the project memory `<folder>.memory.md` in the Session cwd, refusing
+   * when the file moved on since the edit began.
+   * @param sessionId - Session whose recorded cwd anchors the write.
+   * @param content - New full text.
+   * @param expected - The text the edit started from ('' for a file that did not exist).
+   * @param signal - Request cancellation.
+   * @returns completion after the atomic write.
+   */
+  @Remote
+  async saveProjectMemory(sessionId: SessionId, content: string, expected: string, signal: AbortSignal): Promise<void> {
+    const cwd = await this.cwd(sessionId, signal)
+    const path = join(cwd, projectMemoryFileName(cwd))
+    if (readMemoryText(path) !== expected) {
+      throw new RemoteError('workbench/memory-changed', 'The project memory file changed. Refresh before saving.', { path })
+    }
+    atomicWriteText(path, content)
+  }
+
+  /**
+   * Create the project AGENTS.md from the bundled template once; an existing file is kept.
+   * @param sessionId - Session whose recorded cwd anchors the write.
+   * @param locale - Template language.
+   * @param signal - Request cancellation.
+   * @returns whether the file was created or already existed.
+   */
+  @Remote
+  async createProjectAgents(sessionId: SessionId, locale: WorkbenchSeedLocale, signal: AbortSignal): Promise<'created' | 'exists'> {
+    const cwd = await this.cwd(sessionId, signal)
+    const path = join(cwd, 'AGENTS.md')
+    if (existsSync(path)) return 'exists'
+    try {
+      writeFileSync(path, locale === 'zh' ? AGENTS_PROJECT_ZH : AGENTS_PROJECT_EN, { encoding: 'utf8', flag: 'wx' })
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'EEXIST') return 'exists'
+      throw error
+    }
+    return 'created'
+  }
+
   /**
    * Read current repository status without running a model or tool.
    * @param sessionId - Session whose recorded cwd anchors the read.
@@ -515,6 +592,48 @@ function dshHome(): string | undefined {
   const home = process.env.DSH_HOME
   // DSH-QoL：官方桌面端不一定设置 DSH_HOME；没有时用官方默认位置（~/.dsh）。
   return home === undefined || home === '' ? defaultDshHome() : home
+}
+
+function requiredHome(): string {
+  const home = dshHome()
+  if (home === undefined) throw new Error('no DSH home is available')
+  return home
+}
+
+/** DSH-QoL：全局记忆读取上限，与 DeepSeekGUI 主进程一致。 */
+const MEMORY_CONTENT_MAX = 200_000
+
+/**
+ * Read a memory file the way the DeepSeekGUI desktop did: absent = '', too
+ * large or unreadable = null (a save quoting null never matches, so it refuses).
+ * @param path - Memory file path.
+ * @returns the text, '' or null.
+ */
+function readMemoryText(path: string): string | null {
+  try {
+    if (!existsSync(path)) return ''
+    if (statSync(path).size > MEMORY_CONTENT_MAX * 4) return null
+    const content = readFileSync(path, 'utf8')
+    return content.length > MEMORY_CONTENT_MAX ? null : content
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Write through a sibling temp file and rename, so a crash never leaves half a memory file.
+ * @param path - Target file.
+ * @param text - Full new text.
+ */
+function atomicWriteText(path: string, text: string): void {
+  const temp = `${path}.${process.pid}.${Date.now()}.tmp`
+  try {
+    writeFileSync(temp, text, 'utf8')
+    renameSync(temp, path)
+  } catch (error) {
+    rmSync(temp, { force: true })
+    throw error
+  }
 }
 
 export default WorkbenchInspector

@@ -8,10 +8,18 @@
 
 本插件是非官方社区作品，与 DeepSeek 无隶属关系。
 
-## 现在有什么（0.3.1）
+## 现在有什么（0.5.0）
 
 - **隐私与上报**：设置里的「生活质量包」分区。官方桌面端默认开启的四项上报（桌面产品统计、会话日志、插件清单、反馈上传）装上本包后默认全关，由用户自己开关，当场生效。
-- **助手用的 Git 与 PR 工具**：`git_status`、`git_diff`、`git_stage`、`git_unstage`、`git_revert`、`git_commit`、`git_push_preview`、`git_push`、`pr_availability`、`pr_existing`、`pr_create`。写操作需要用户审批。
+- **工作台视图**：对话、轨迹旁边多出「改动」「Git」「记忆」三个标签（并行工作区在 Git 里）。只读，不调用模型。
+- **记忆**：每次开会话，把全局记忆（`<DSH home>/memory.md`）与项目记忆（工作区里的 `<文件夹名>.memory.md`）交给助手；设置里可以编辑全局记忆，记忆标签里可以编辑项目记忆、生成项目 AGENTS.md。
+- **助手用的 Git 与 PR 工具**：`git_status`、`git_diff`、`git_stage`、`git_unstage`、`git_revert`、`git_commit`、`git_push_preview`、`git_push`、`pr_availability`、`pr_existing`、`pr_create`，对话里显示为结果卡片。写操作需要用户审批。
+
+暂不可用（依赖 DeepSeekGUI 对官方的改动或桌面外壳）：彻底删除会话、归档时自动整理记忆、在文件管理器中定位文件。
+
+## 远程接口描述（src/generated）
+
+`workbenchInspector` 的远程接口描述由官方 Typert 生成器产出。官方生成器只认官方单仓库结构，所以在 DeepSeekGUI 仓库里生成后拷来，包名换成 `@see-sol-lab/dsh-qol`。改了 inspector 的远程方法签名后要重新生成。
 
 ## 构建
 

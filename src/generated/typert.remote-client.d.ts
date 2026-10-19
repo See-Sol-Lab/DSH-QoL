@@ -6,21 +6,25 @@ import type {
 } from '@deepseek-ai/dsh-typert-protocol'
 import type { DiffResult, DiffScope } from '@deepseek-ai/dsh-git/types'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { ArchiveMemoryRecord, MemoryInjection, MemorySuggestion, WorkbenchArchiveMemory, WorkbenchExportLanguage, WorkbenchExportMarkdown, WorkbenchFileText, WorkbenchLastReply, WorkbenchMemory, WorkbenchOverview, WorkbenchRepository, WorkbenchSandboxClean } from '@see-sol-lab/dsh-qol/types'
+import type { ArchiveMemoryRecord, MemoryInjection, MemorySuggestion, WorkbenchArchiveMemory, WorkbenchExportLanguage, WorkbenchExportMarkdown, WorkbenchFileText, WorkbenchGlobalMemory, WorkbenchLastReply, WorkbenchMemory, WorkbenchOverview, WorkbenchRepository, WorkbenchSandboxClean, WorkbenchSeedLocale } from '@see-sol-lab/dsh-qol/types'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$776f726b62656e6368496e73706563746f72 {
     archiveMemoryState: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchArchiveMemory>>
     cleanSandboxMarks: (path: string, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchSandboxClean>>
+    createProjectAgents: (sessionId: SessionId, locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<'created' | 'exists'>>
     deleteSession: (sessionId: SessionId, signature: string) => Promise<RemoteResult<void>>
     diff: (sessionId: SessionId, scope: DiffScope, path: string, signal?: AbortSignal) => Promise<RemoteResult<DiffResult>>
     exportMarkdown: (sessionId: SessionId, includeDetails: boolean, language: WorkbenchExportLanguage, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchExportMarkdown>>
+    globalMemory: (signal?: AbortSignal) => Promise<RemoteResult<WorkbenchGlobalMemory>>
     lastReply: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchLastReply>>
     memory: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchMemory>>
     memoryInjection: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<MemoryInjection | null>>
     memorySuggestions: (signal?: AbortSignal) => Promise<RemoteResult<MemorySuggestion[]>>
     overview: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchOverview>>
     resolveMemorySuggestion: (id: string, signal?: AbortSignal) => Promise<RemoteResult<boolean>>
+    saveGlobalMemory: (content: string, expected: string, signal?: AbortSignal) => Promise<RemoteResult<void>>
+    saveProjectMemory: (sessionId: SessionId, content: string, expected: string, signal?: AbortSignal) => Promise<RemoteResult<void>>
     setArchiveMemorySettings: (auto: boolean | null, noticeSeen: boolean | null, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchArchiveMemory['settings']>>
     status: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchRepository>>
     summarizeSession: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<ArchiveMemoryRecord>>
@@ -29,15 +33,19 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteMap {
     'workbenchInspector/archiveMemoryState': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchArchiveMemory>>
     'workbenchInspector/cleanSandboxMarks': (path: string, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchSandboxClean>>
+    'workbenchInspector/createProjectAgents': (sessionId: SessionId, locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<'created' | 'exists'>>
     'workbenchInspector/deleteSession': (sessionId: SessionId, signature: string) => Promise<RemoteResult<void>>
     'workbenchInspector/diff': (sessionId: SessionId, scope: DiffScope, path: string, signal?: AbortSignal) => Promise<RemoteResult<DiffResult>>
     'workbenchInspector/exportMarkdown': (sessionId: SessionId, includeDetails: boolean, language: WorkbenchExportLanguage, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchExportMarkdown>>
+    'workbenchInspector/globalMemory': (signal?: AbortSignal) => Promise<RemoteResult<WorkbenchGlobalMemory>>
     'workbenchInspector/lastReply': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchLastReply>>
     'workbenchInspector/memory': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchMemory>>
     'workbenchInspector/memoryInjection': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<MemoryInjection | null>>
     'workbenchInspector/memorySuggestions': (signal?: AbortSignal) => Promise<RemoteResult<MemorySuggestion[]>>
     'workbenchInspector/overview': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchOverview>>
     'workbenchInspector/resolveMemorySuggestion': (id: string, signal?: AbortSignal) => Promise<RemoteResult<boolean>>
+    'workbenchInspector/saveGlobalMemory': (content: string, expected: string, signal?: AbortSignal) => Promise<RemoteResult<void>>
+    'workbenchInspector/saveProjectMemory': (sessionId: SessionId, content: string, expected: string, signal?: AbortSignal) => Promise<RemoteResult<void>>
     'workbenchInspector/setArchiveMemorySettings': (auto: boolean | null, noticeSeen: boolean | null, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchArchiveMemory['settings']>>
     'workbenchInspector/status': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchRepository>>
     'workbenchInspector/summarizeSession': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<ArchiveMemoryRecord>>
@@ -51,15 +59,19 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 export declare const TYPERT_REMOTE: TypertRemoteInfo<{
   readonly 'workbenchInspector/archiveMemoryState': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, WorkbenchArchiveMemory>
   readonly 'workbenchInspector/cleanSandboxMarks': TypertRemoteMethod<{ readonly 'path': string }, WorkbenchSandboxClean>
+  readonly 'workbenchInspector/createProjectAgents': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'locale': WorkbenchSeedLocale }, 'created' | 'exists'>
   readonly 'workbenchInspector/deleteSession': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'signature': string }, void>
   readonly 'workbenchInspector/diff': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'scope': DiffScope; readonly 'path': string }, DiffResult>
   readonly 'workbenchInspector/exportMarkdown': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'includeDetails': boolean; readonly 'language': WorkbenchExportLanguage }, WorkbenchExportMarkdown>
+  readonly 'workbenchInspector/globalMemory': TypertRemoteMethod<{  }, WorkbenchGlobalMemory>
   readonly 'workbenchInspector/lastReply': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, WorkbenchLastReply>
   readonly 'workbenchInspector/memory': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, WorkbenchMemory>
   readonly 'workbenchInspector/memoryInjection': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, MemoryInjection | null>
   readonly 'workbenchInspector/memorySuggestions': TypertRemoteMethod<{  }, MemorySuggestion[]>
   readonly 'workbenchInspector/overview': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, WorkbenchOverview>
   readonly 'workbenchInspector/resolveMemorySuggestion': TypertRemoteMethod<{ readonly 'id': string }, boolean>
+  readonly 'workbenchInspector/saveGlobalMemory': TypertRemoteMethod<{ readonly 'content': string; readonly 'expected': string }, void>
+  readonly 'workbenchInspector/saveProjectMemory': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'content': string; readonly 'expected': string }, void>
   readonly 'workbenchInspector/setArchiveMemorySettings': TypertRemoteMethod<{ readonly 'auto': boolean | null; readonly 'noticeSeen': boolean | null }, WorkbenchArchiveMemory['settings']>
   readonly 'workbenchInspector/status': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, WorkbenchRepository>
   readonly 'workbenchInspector/summarizeSession': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, ArchiveMemoryRecord>
