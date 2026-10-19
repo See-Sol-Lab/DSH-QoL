@@ -1,0 +1,29 @@
+# DeepSeekGUI 生活质量包的组合层。
+#
+# 本层排在官方 web-app 组合之后，所以下面的覆盖能盖住官方默认；用户在
+# 「设置 → 生活质量包」里打开某一项时，写进自己的 profile 补丁，补丁层又
+# 排在所有组合之后，用户的选择说了算。卸载本包后这四项回到官方默认。
+
+- insert:
+    - id: deepseekgui-qol
+      name: '@see-sol-lab/deepseekgui-qol'
+
+# 桌面产品统计：界面操作事件（带设备与账号 ID）。可热改。
+- id: product-analytics
+  config:
+    enabled: false
+
+# 会话日志：随官方模型请求附带整段会话记录。可热改。
+- id: session-log-deepseek
+  config:
+    enabled: false
+
+# 插件清单：随官方模型请求附带已启用插件。不可热改，改了要重启。
+- id: plugin-package-inventory-deepseek
+  config:
+    enabled: false
+
+# 反馈上传：点反馈或打分时上传当时的会话记录。不可热改，改了要重启。
+- id: session-telemetry-otel
+  config:
+    mode: DISABLED
