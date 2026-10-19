@@ -8,7 +8,7 @@
 
 本插件是非官方社区作品，与 DeepSeek 无隶属关系。
 
-## 现在有什么（0.3.0）
+## 现在有什么（0.3.1）
 
 - **隐私与上报**：设置里的「生活质量包」分区。官方桌面端默认开启的四项上报（桌面产品统计、会话日志、插件清单、反馈上传）装上本包后默认全关，由用户自己开关，当场生效。
 - **助手用的 Git 与 PR 工具**：`git_status`、`git_diff`、`git_stage`、`git_unstage`、`git_revert`、`git_commit`、`git_push_preview`、`git_push`、`pr_availability`、`pr_existing`、`pr_create`。写操作需要用户审批。
@@ -28,4 +28,8 @@ pnpm run build
 "D:\DSH官端\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add file:E:/DSH-QoL
 ```
 
-改完代码后重新构建，再执行一次上面的命令。
+改完代码后先 `pnpm run check`（类型检查加构建），再**先 remove 后 add**：版本号不变时 pnpm 认为已是最新，不会重新复制文件。
+
+```bash
+"D:\DSH官端esourcesuntime\cliin\dsh.cmd" plugin --profile desktop remove @see-sol-lab/dsh-qol
+```
