@@ -254,4 +254,64 @@ export interface MemoryInjection {
 }
 
 // DSH-QoL：技能库的类型一并从 @see-sol-lab/dsh-qol/types 导出（远程接口描述按这个路径引用）。
+// ---- 用量与余额（移植自 DeepSeekGUI usage-service） ----
+
+/** 一笔金额：币种 + 十进制字符串，原样来自官方，绝不经浮点。 */
+export interface UsageMoney {
+  readonly currency: string
+  readonly amount: string
+}
+
+/** 一个时段的消费情况。 */
+export interface UsageWindowView {
+  /** 该时段消费金额，按币种分列（十进制字符串相加，保留原有小数位）。 */
+  readonly costs: readonly UsageMoney[]
+  readonly requests: number
+  /** Token 总数 = 缓存命中 + 缓存未命中 + 输出。 */
+  readonly tokens: number
+  /** 缓存命中率 = 命中 / (命中 + 未命中)；没有输入 token 时为 null。 */
+  readonly cacheHitRate: number | null
+}
+
+/** 热力图一格：本地日期与当天 token 总数。 */
+export interface UsageHeatmapDay {
+  /** `YYYY-MM-DD`（按计划的 tz）。 */
+  readonly date: string
+  readonly tokens: number
+}
+
+/** 聚合后的展示值（设置页只拿这个）。 */
+export interface UsageData {
+  /** 充值余额，可多币种。 */
+  readonly balances: readonly UsageMoney[]
+  /** 赠金余额，只保留 > 0 的钱包。 */
+  readonly bonus: readonly UsageMoney[]
+  /** 累计消费，按币种。 */
+  readonly totalCosts: readonly UsageMoney[]
+  readonly today: UsageWindowView
+  readonly days7: UsageWindowView
+  readonly days30: UsageWindowView
+  /** 60 格，最早的一天在前。 */
+  readonly heatmap: readonly UsageHeatmapDay[]
+}
+
+/**
+ * 取不到数据时的原因（面板按原因给不同提示，都不显示旧值）。blocked：平台前面的防护
+ * 暂时拒绝了请求（202 / 403 / 429 或回来一页 HTML），过几分钟会自己好，不是改版。
+ */
+export type UsageUnavailableReason = 'network' | 'timeout' | 'format' | 'no-session' | 'blocked'
+
+/** 一次读取用量的结果。ready 之外不带数据：不把旧值当实时值显示。 */
+export interface WorkbenchUsage {
+  readonly status: 'ready' | 'signed-out' | 'unavailable'
+  /** unavailable 时的原因；其余为 null。 */
+  readonly reason: UsageUnavailableReason | null
+  /** 这份数据取到的时刻（ISO）。 */
+  readonly fetchedAt: string
+  /** ready 时存在。 */
+  readonly data: UsageData | null
+  /** 官方用量页。 */
+  readonly usagePageUrl: string
+}
+
 export type * from './skill-manager/types.ts'

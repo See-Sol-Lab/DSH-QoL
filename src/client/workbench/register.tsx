@@ -8,6 +8,7 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { WorkbenchUsage } from '@see-sol-lab/dsh-qol/types'
 // Type-only: ctx.remote、ctx.sessions、ctx.conversation 与各插槽的类型合并。
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-client-ui-tool/client'
@@ -25,6 +26,7 @@ import { NS_INSPECTOR, en as inspectorEn, zh as inspectorZh, type InspectorKey }
 import { NS_MEMORY, en as memoryEn, zh as memoryZh, type MemoryKey } from './locales-memory.ts'
 import { en as workbenchEn, zh as workbenchZh, type WorkbenchKey } from './locales-workbench.ts'
 import { ArchivedSessionsSection } from './ArchivedSessionsSection.tsx'
+import { NS_USAGE, UsageSection, en as usageEn, zh as usageZh, type UsageKey } from './UsageSection.tsx'
 import { createSessionExporter, ExportSessionDialog, ExportSessionMenuItem } from './session-export.tsx'
 import { createSessionDeleter, DeleteSessionDialog, DeleteSessionMenuItem } from './session-delete.tsx'
 // Type-only: ctx.uiWorkspace（恢复与打开会话）。
@@ -38,6 +40,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     'dsh.qol.inspector': InspectorKey
     'dsh.qol.memory': MemoryKey
     'dsh.qol.workbench': WorkbenchKey
+    'dsh.qol.usage': UsageKey
   }
 }
 
@@ -56,6 +59,8 @@ const VIEWS = [
 
 const MEMORY_VIEW_ORDER = 23
 const MEMORY_SECTION_ORDER = 46
+/** 用量与余额分区：生活质量包（45）之前。 */
+const USAGE_SECTION_ORDER = 44
 /** 已归档会话分区：排在官方分区之后、我们其他分区之前。 */
 const ARCHIVED_SECTION_ORDER = 30
 /** 会话菜单里「导出」的位置：官方的归档（400）之后。 */
@@ -77,6 +82,7 @@ export async function applyWorkbench(ctx: Context): Promise<void> {
   ctx.effect(() => ctx.locale.register(NS_INSPECTOR, { zh: inspectorZh, en: inspectorEn }), 'dsh-qol: inspector dictionaries')
   ctx.effect(() => ctx.locale.register(NS_MEMORY, { zh: memoryZh, en: memoryEn }), 'dsh-qol: memory dictionaries')
   ctx.effect(() => ctx.locale.register('dsh.qol.workbench', { zh: workbenchZh, en: workbenchEn }), 'dsh-qol: workbench dictionaries')
+  ctx.effect(() => ctx.locale.register(NS_USAGE, { zh: usageZh, en: usageEn }), 'dsh-qol: usage dictionaries')
   const t = ctx.locale.bind(NS_INSPECTOR)
   const tm = ctx.locale.bind(NS_MEMORY)
   // 插槽回调给的是普通字符串的会话 ID；发指令要带品牌的 SessionId。
@@ -123,6 +129,23 @@ export async function applyWorkbench(ctx: Context): Promise<void> {
         label: () => tm('nav.memory'),
         inject: () => ({ desk }),
       }, MemorySettingsSection))
+
+    // 用量与余额：Host 带官方账号令牌取数，这里只拿聚合值。语言跟界面。
+    const tu = ctx.locale.bind(NS_USAGE)
+    const loadUsage = async (): Promise<WorkbenchUsage> => {
+      const result = await inspector.accountUsage(/[一-鿿]/u.test(tu('nav')) ? 'zh' : 'en', new AbortController().signal)
+      if (!result.ok) throw new Error(result.error.message)
+      return result.value
+    }
+    scoped.slots.inject('settings.section', () =>
+      scoped.slots.register({
+        name: 'settings.section',
+        id: 'dsh-qol-usage',
+        order: USAGE_SECTION_ORDER,
+        locale: NS_USAGE,
+        label: () => tu('nav'),
+        inject: () => ({ load: loadUsage }),
+      }, UsageSection))
 
     // 删除已归档会话：设置「已归档的会话」每行的删除按钮，与会话菜单里的「删除」（只对已归档的行出现，
     // 先确认）。删除由 Host inspector 完成，只删已归档且没在加载的会话。

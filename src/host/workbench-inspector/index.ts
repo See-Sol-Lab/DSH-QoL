@@ -10,6 +10,7 @@ import Schema from '@deepseek-ai/schemastery'
 import { defaultDshHome } from '@deepseek-ai/dsh-home-paths'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { renderSessionMarkdown, untitledSessionTitle } from './session-markdown.ts'
+import { fetchAccountUsage, type UsageCredentials } from './usage.ts'
 import { existsSync, lstatSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { isAbsolute, join, relative } from 'node:path'
 import AGENTS_PROJECT_ZH from '../../../assets/AGENTS.project.zh.md'
@@ -18,7 +19,7 @@ import type {} from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-workspace'
 // Type-only: the api-session/removed event.
 import type {} from '@deepseek-ai/dsh-api-session-controller'
-import { projectMemoryFileName, type MemoryInjection, type WorkbenchExportLanguage, type WorkbenchExportMarkdown, type WorkbenchFileText, type WorkbenchGlobalMemory, type WorkbenchLastReply, type WorkbenchMemory, type WorkbenchSeedLocale, type WorkbenchOverview, type WorkbenchRepository, type WorkbenchSandboxClean, type WorkbenchWorktree } from './types.ts'
+import { projectMemoryFileName, type MemoryInjection, type WorkbenchExportLanguage, type WorkbenchExportMarkdown, type WorkbenchFileText, type WorkbenchGlobalMemory, type WorkbenchLastReply, type WorkbenchMemory, type WorkbenchSeedLocale, type WorkbenchOverview, type WorkbenchRepository, type WorkbenchSandboxClean, type WorkbenchUsage, type WorkbenchWorktree } from './types.ts'
 
 export type * from './types.ts'
 export { projectMemoryFileName } from './types.ts'
@@ -92,11 +93,40 @@ export class WorkbenchInspector extends TypertRemoteService {
       this.registry = registryCtx.workspaceRegistry
       registryCtx.effect(() => () => { this.registry = undefined })
     })
+    // DSH-QoL：用量页读官方账号插件存的平台令牌；没有 credentials 服务就当未登录。
+    ctx.inject(['credentials'], (credentialsCtx) => {
+      this.credentials = credentialsCtx.get('credentials') as unknown as UsageCredentials
+      credentialsCtx.effect(() => () => { this.credentials = undefined })
+    })
     ctx.inject(['sessions'], (sessionsCtx) => {
       // 前后端在同一个类型检查程序里，ctx.sessions 被前端的 ISessions 合并覆盖；Host 这里是会话注册表。
       this.liveSessions = sessionsCtx.get('sessions') as unknown as { get(id: SessionId): unknown }
       sessionsCtx.effect(() => () => { this.liveSessions = undefined })
     })
+  }
+
+  /** DSH-QoL：官方凭据服务（读平台令牌）。 */
+  private credentials: UsageCredentials | undefined
+  /** DSH-QoL：最近一次用量结果；5 秒内再问直接给它，连点刷新不会连发请求。 */
+  private lastUsage: { at: number; value: Promise<WorkbenchUsage> } | undefined
+
+  /**
+   * 账户用量与余额：插件后台带官方账号的平台令牌请求开放平台，只返回聚合值。
+   * @param locale - 界面语言。
+   * @param signal - Request cancellation.
+   * @returns 用量结果；没登录为 signed-out。
+   */
+  @Remote
+  async accountUsage(locale: WorkbenchSeedLocale, signal: AbortSignal): Promise<WorkbenchUsage> {
+    const now = Date.now()
+    if (this.lastUsage !== undefined && now - this.lastUsage.at < 5_000) return this.lastUsage.value
+    const credentials = this.credentials
+    const value = credentials === undefined
+      ? Promise.resolve<WorkbenchUsage>({ status: 'signed-out', reason: null, fetchedAt: new Date(now).toISOString(), data: null, usagePageUrl: 'https://platform.deepseek.com/usage' })
+      : fetchAccountUsage(credentials, locale, signal, now)
+    this.lastUsage = { at: now, value }
+    value.catch(() => { if (this.lastUsage?.value === value) this.lastUsage = undefined })
+    return value
   }
 
   /** DSH-QoL：官方工作区注册表（归档集合）。 */

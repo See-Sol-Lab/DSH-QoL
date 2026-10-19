@@ -6,7 +6,7 @@ import type {
 } from '@deepseek-ai/dsh-typert-protocol'
 import type { DiffResult, DiffScope } from '@deepseek-ai/dsh-git/types'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { MemoryInjection, SkillImportOutcome, SkillImportPreview, SkillImportRequest, SkillInstallReferences, SkillInventory, SkillProjectSelectionOutcome, SkillProjectSelectionRequest, SkillProjectView, SkillUninstallOutcome, WorkbenchExportLanguage, WorkbenchExportMarkdown, WorkbenchFileText, WorkbenchGlobalMemory, WorkbenchLastReply, WorkbenchMemory, WorkbenchOverview, WorkbenchRepository, WorkbenchSandboxClean, WorkbenchSeedLocale } from '@see-sol-lab/dsh-qol/types'
+import type { MemoryInjection, SkillImportOutcome, SkillImportPreview, SkillImportRequest, SkillInstallReferences, SkillInventory, SkillProjectSelectionOutcome, SkillProjectSelectionRequest, SkillProjectView, SkillUninstallOutcome, WorkbenchExportLanguage, WorkbenchExportMarkdown, WorkbenchFileText, WorkbenchGlobalMemory, WorkbenchLastReply, WorkbenchMemory, WorkbenchOverview, WorkbenchRepository, WorkbenchSandboxClean, WorkbenchSeedLocale, WorkbenchUsage } from '@see-sol-lab/dsh-qol/types'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$736b696c6c4d616e61676572 {
@@ -19,6 +19,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     uninstall: (installId: string, signal?: AbortSignal) => Promise<RemoteResult<SkillUninstallOutcome>>
   }
   interface TypertRemoteNamespace$776f726b62656e6368496e73706563746f72 {
+    accountUsage: (locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchUsage>>
     cleanSandboxMarks: (path: string, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchSandboxClean>>
     createProjectAgents: (sessionId: SessionId, locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<'created' | 'exists'>>
     deleteSession: (sessionId: SessionId, signature: string) => Promise<RemoteResult<void>>
@@ -42,6 +43,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'skillManager/projectView': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<SkillProjectView>>
     'skillManager/setProjectSelection': (request: SkillProjectSelectionRequest, signal?: AbortSignal) => Promise<RemoteResult<SkillProjectSelectionOutcome>>
     'skillManager/uninstall': (installId: string, signal?: AbortSignal) => Promise<RemoteResult<SkillUninstallOutcome>>
+    'workbenchInspector/accountUsage': (locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchUsage>>
     'workbenchInspector/cleanSandboxMarks': (path: string, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchSandboxClean>>
     'workbenchInspector/createProjectAgents': (sessionId: SessionId, locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<'created' | 'exists'>>
     'workbenchInspector/deleteSession': (sessionId: SessionId, signature: string) => Promise<RemoteResult<void>>
@@ -71,6 +73,7 @@ export declare const TYPERT_REMOTE: TypertRemoteInfo<{
   readonly 'skillManager/projectView': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, SkillProjectView>
   readonly 'skillManager/setProjectSelection': TypertRemoteMethod<{ readonly 'request': SkillProjectSelectionRequest }, SkillProjectSelectionOutcome>
   readonly 'skillManager/uninstall': TypertRemoteMethod<{ readonly 'installId': string }, SkillUninstallOutcome>
+  readonly 'workbenchInspector/accountUsage': TypertRemoteMethod<{ readonly 'locale': WorkbenchSeedLocale }, WorkbenchUsage>
   readonly 'workbenchInspector/cleanSandboxMarks': TypertRemoteMethod<{ readonly 'path': string }, WorkbenchSandboxClean>
   readonly 'workbenchInspector/createProjectAgents': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'locale': WorkbenchSeedLocale }, 'created' | 'exists'>
   readonly 'workbenchInspector/deleteSession': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'signature': string }, void>
