@@ -10,7 +10,6 @@ import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SettingsSectionOwnerProps } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { WorkbenchDesk } from '../desk.ts'
 import type { NS_MEMORY } from '../locales-memory.ts'
-import type { InspectorRemote } from '../views/shared.tsx'
 import { LegacyGlobalEditor } from './LegacyGlobalEditor.tsx'
 import { column } from './styles.ts'
 
@@ -18,17 +17,15 @@ import { column } from './styles.ts'
 export interface MemorySettingsInjected {
   /** DSH-QoL：全局记忆读写经 Host inspector。 */
   desk: WorkbenchDesk
-  /** The harness inspector (archive-notes suggestions). */
-  inspector: InspectorRemote | null
 }
 
 /** Locale seat, owner props, and the injected business props. */
 export type MemorySettingsSectionProps = PropsLocale<typeof NS_MEMORY> & SettingsSectionOwnerProps & MemorySettingsInjected
 
-export function MemorySettingsSection({ desk, inspector, t }: MemorySettingsSectionProps) {
+export function MemorySettingsSection({ desk, t }: MemorySettingsSectionProps) {
   return (
     <div style={{ ...column, gap: 14 }} data-deepseekgui="memory-settings">
-      <LegacyGlobalEditor desk={desk} inspector={inspector} t={t} />
+      <LegacyGlobalEditor desk={desk} t={t} />
     </div>
   )
 }

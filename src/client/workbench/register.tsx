@@ -105,7 +105,7 @@ export async function applyWorkbench(ctx: Context): Promise<void> {
         order: MEMORY_SECTION_ORDER,
         locale: NS_MEMORY,
         label: () => tm('nav.memory'),
-        inject: () => ({ desk, inspector }),
+        inject: () => ({ desk }),
       }, MemorySettingsSection))
   })
 }
