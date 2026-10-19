@@ -1,15 +1,21 @@
-// 把 src/host 下的 TypeScript 打成官方运行时能直接加载的 ESM。
+// 把 src 下的 TypeScript 打成官方运行时能直接加载的产物。
 //
-// 规则只有一条：官方的 @deepseek-ai/* 包一律 external，运行时用官方桌面端自带的
-// （核对过都在 app.asar 里）；我们自己从 DeepSeekGUI 搬来、官方没有的几个包
-// （OWN 里列的）打进产物。多个入口共用的代码由 splitting 拆成公共 chunk，
-// 保证 git / pull-request 的服务定义只有一份。
+// Host 面（Node）：官方的 @deepseek-ai/* 包一律 external，运行时用官方桌面端自带
+// 的（核对过都在 app.asar 里）；我们自己从 DeepSeekGUI 搬来、官方没有的几个包
+// （OWN 里列的）打进产物。多个入口共用的代码由 splitting 拆进 lib/chunks。
+//
+// 浏览器面：官方 client 运行时只认 window.__ModuleLoader__.load({ id, factory }) 的
+// 自注册形状，factory 拿到 loader 的 require。所以先打成 CommonJS（react 外置，
+// 留成 require('react')），再包上这层外壳写进 lib/client.js。
 import { build } from 'esbuild'
+import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const host = join(root, 'src', 'host')
+const src = join(root, 'src')
+const host = join(src, 'host')
+const pkg = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
 
 // 包名（含子路径）→ 本仓库源码。源码里沿用 DeepSeekGUI 的包名，搬运时不用改 import。
 const OWN = {
@@ -31,11 +37,13 @@ const resolveOwn = {
 await build({
   absWorkingDir: root,
   entryPoints: {
-    'git-local': join(host, 'git-local', 'index.ts'),
-    'pull-request-gh': join(host, 'pull-request-gh', 'index.ts'),
-    'coding-tools': join(host, 'coding-tools', 'index.ts'),
+    'index': join(src, 'index.ts'),
+    'host/git-local': join(host, 'git-local', 'index.ts'),
+    'host/pull-request-gh': join(host, 'pull-request-gh', 'index.ts'),
+    'host/coding-tools': join(host, 'coding-tools', 'index.ts'),
   },
-  outdir: join(root, 'lib', 'host'),
+  outdir: join(root, 'lib'),
+  chunkNames: 'chunks/[name]-[hash]',
   bundle: true,
   splitting: true,
   format: 'esm',
@@ -44,3 +52,32 @@ await build({
   plugins: [resolveOwn],
   logLevel: 'info',
 })
+
+const client = await build({
+  absWorkingDir: root,
+  entryPoints: [join(src, 'client', 'index.tsx')],
+  bundle: true,
+  write: false,
+  format: 'cjs',
+  platform: 'browser',
+  target: 'es2022',
+  jsx: 'transform',
+  external: ['react', '@deepseek-ai/*'],
+  logLevel: 'info',
+})
+const body = client.outputFiles[0].text
+await writeFile(join(root, 'lib', 'client.js'), [
+  '// 构建产物，勿手改：源码在 src/client，由 scripts/build.mjs 生成。',
+  'window.__ModuleLoader__.load({',
+  `  id: ${JSON.stringify(pkg.name)},`,
+  '  factory: (require) => {',
+  '    var module = { exports: {} }',
+  '    var exports = module.exports',
+  body,
+  "    Object.defineProperty(module.exports, Symbol.toStringTag, { value: 'Module' })",
+  '    return module.exports',
+  '  },',
+  '})',
+  '',
+].join('\n'))
+console.log('  lib/client.js  ' + (body.length / 1024).toFixed(1) + 'kb (wrapped)')
