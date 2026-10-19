@@ -24,8 +24,7 @@ import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-/** 删除一个会话的数据（DSH-QoL：删除通道在第 5 步接入，之前传 null）。 */
-export type SessionDeleter = (sessionId: string) => Promise<void>
+import type { SessionDeleter } from './session-delete.tsx'
 import { button, caption, card, column, dangerButton, errorText, intro, row } from './memory/styles.ts'
 
 /** Business face the plugin entry injects. */

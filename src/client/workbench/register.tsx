@@ -26,6 +26,7 @@ import { NS_MEMORY, en as memoryEn, zh as memoryZh, type MemoryKey } from './loc
 import { en as workbenchEn, zh as workbenchZh, type WorkbenchKey } from './locales-workbench.ts'
 import { ArchivedSessionsSection } from './ArchivedSessionsSection.tsx'
 import { createSessionExporter, ExportSessionDialog, ExportSessionMenuItem } from './session-export.tsx'
+import { createSessionDeleter, DeleteSessionDialog, DeleteSessionMenuItem } from './session-delete.tsx'
 // Type-only: ctx.uiWorkspace（恢复与打开会话）。
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 // Type-only: the shell.overlay slot.
@@ -59,6 +60,8 @@ const MEMORY_SECTION_ORDER = 46
 const ARCHIVED_SECTION_ORDER = 30
 /** 会话菜单里「导出」的位置：官方的归档（400）之后。 */
 const EXPORT_MENU_ORDER = 450
+/** 会话菜单里「删除」的位置：导出之后（只对已归档的行出现）。 */
+const DELETE_MENU_ORDER = 500
 
 /** 工作台需要的官方服务。 */
 export const workbenchInject = ['slots', 'locale', 'remote', 'sessions', 'conversation', 'uiWorkspace'] as const
@@ -85,22 +88,6 @@ export async function applyWorkbench(ctx: Context): Promise<void> {
       yield ctx.slots.register({ name: 'tool.call.toolview', key, locale: NS_TOOLS, inject: instructions }, GitPrToolRow)
     }
   })
-
-  // 设置「已归档的会话」：单独列出归档，恢复走官方 uiWorkspace。删除要等插件后台的
-  // 删除通道做好（第 5 步），在那之前不传删除函数，删除按钮不显示。
-  ctx.slots.inject('settings.section', () =>
-    ctx.slots.register({
-      name: 'settings.section',
-      id: 'dsh-qol-archived',
-      order: ARCHIVED_SECTION_ORDER,
-      locale: 'dsh.qol.workbench',
-      label: () => ctx.locale.bind('dsh.qol.workbench')('archived.nav'),
-      inject: () => ({
-        restore: (sessionId: SessionId) => ctx.uiWorkspace.unarchiveSession(sessionId),
-        open: (sessionId: SessionId): void => { ctx.uiWorkspace.openSession(sessionId) },
-        deleteSession: null,
-      }),
-    }, ArchivedSessionsSection))
 
   // 标签与设置分区要拿到 remote.workbenchInspector 子服务：Cordis 只把它交给声明了
   // 它的作用域，而挂载发生在 apply 里，所以在这里开一个子作用域。
@@ -136,6 +123,38 @@ export async function applyWorkbench(ctx: Context): Promise<void> {
         label: () => tm('nav.memory'),
         inject: () => ({ desk }),
       }, MemorySettingsSection))
+
+    // 删除已归档会话：设置「已归档的会话」每行的删除按钮，与会话菜单里的「删除」（只对已归档的行出现，
+    // 先确认）。删除由 Host inspector 完成，只删已归档且没在加载的会话。
+    const deleteSession = createSessionDeleter(inspector)
+    scoped.slots.inject('settings.section', () =>
+      scoped.slots.register({
+        name: 'settings.section',
+        id: 'dsh-qol-archived',
+        order: ARCHIVED_SECTION_ORDER,
+        locale: 'dsh.qol.workbench',
+        label: () => ctx.locale.bind('dsh.qol.workbench')('archived.nav'),
+        inject: () => ({
+          restore: (sessionId: SessionId) => ctx.uiWorkspace.unarchiveSession(sessionId),
+          open: (sessionId: SessionId): void => { ctx.uiWorkspace.openSession(sessionId) },
+          deleteSession,
+        }),
+      }, ArchivedSessionsSection))
+    scoped.slots.inject('sidebar.workspaces.session.menu.item', () =>
+      scoped.slots.register({
+        name: 'sidebar.workspaces.session.menu.item',
+        id: 'dsh-qol-delete',
+        locale: 'dsh.qol.workbench',
+        order: DELETE_MENU_ORDER,
+        inject: () => ({ deleteSession }),
+      }, DeleteSessionMenuItem))
+    scoped.slots.inject('shell.overlay', () =>
+      scoped.slots.register({
+        name: 'shell.overlay',
+        id: 'dsh-qol-session-delete',
+        locale: 'dsh.qol.workbench',
+        inject: () => ({ deleteSession }),
+      }, DeleteSessionDialog))
 
     // 会话菜单「导出为 Markdown」：菜单项写入待导出请求，对话框挂在整页浮层里（菜单关了它还在）。
     // 导出语言跟界面语言：界面文案是中文就导出中文标签。

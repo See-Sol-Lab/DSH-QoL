@@ -1,7 +1,7 @@
 {
   "name": "@see-sol-lab/dsh-qol",
   "description": "DSH 生活质量包：给 DeepSeek Harness 官方桌面端补上体验细节——四项上报默认关并可开关；改动、Git、项目管理、记忆四个视图；全局记忆、已归档会话、本地技能库三个设置分区；会话导出 Markdown；助手可用的 Git 与 PR 工具及结果卡片；项目与全局记忆注入。",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "main": "lib/index.js",

@@ -10,12 +10,14 @@ import Schema from '@deepseek-ai/schemastery'
 import { defaultDshHome } from '@deepseek-ai/dsh-home-paths'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { renderSessionMarkdown, untitledSessionTitle } from './session-markdown.ts'
-import { existsSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, lstatSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { isAbsolute, join, relative } from 'node:path'
 import AGENTS_PROJECT_ZH from '../../../assets/AGENTS.project.zh.md'
 import AGENTS_PROJECT_EN from '../../../assets/AGENTS.project.en.md'
 import type {} from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-workspace'
+// Type-only: the api-session/removed event.
+import type {} from '@deepseek-ai/dsh-api-session-controller'
 import { projectMemoryFileName, type MemoryInjection, type WorkbenchExportLanguage, type WorkbenchExportMarkdown, type WorkbenchFileText, type WorkbenchGlobalMemory, type WorkbenchLastReply, type WorkbenchMemory, type WorkbenchSeedLocale, type WorkbenchOverview, type WorkbenchRepository, type WorkbenchSandboxClean, type WorkbenchWorktree } from './types.ts'
 
 export type * from './types.ts'
@@ -59,6 +61,8 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'workbench/unsupported': Record<string, never>
     /** DSH-QoL：保存记忆时文件已被别处改过（助手或其他编辑器），需刷新后再改。 */
     'workbench/memory-changed': { readonly path: string }
+    /** DSH-QoL：会话还在加载中，不能删。 */
+    'workbench/session-busy': Record<string, never>
   }
 }
 
@@ -83,7 +87,22 @@ export class WorkbenchInspector extends TypertRemoteService {
       this.sandbox = sandboxCtx.get('sandbox')
       sandboxCtx.effect(() => () => { this.sandbox = undefined })
     })
+    // DSH-QoL：删除已归档会话要看归档集合与当前加载的会话；都按可选依赖读，缺了就拒绝删除。
+    ctx.inject(['workspaceRegistry'], (registryCtx) => {
+      this.registry = registryCtx.workspaceRegistry
+      registryCtx.effect(() => () => { this.registry = undefined })
+    })
+    ctx.inject(['sessions'], (sessionsCtx) => {
+      // 前后端在同一个类型检查程序里，ctx.sessions 被前端的 ISessions 合并覆盖；Host 这里是会话注册表。
+      this.liveSessions = sessionsCtx.get('sessions') as unknown as { get(id: SessionId): unknown }
+      sessionsCtx.effect(() => () => { this.liveSessions = undefined })
+    })
   }
+
+  /** DSH-QoL：官方工作区注册表（归档集合）。 */
+  private registry: Context['workspaceRegistry'] | undefined
+  /** DSH-QoL：Host 里当前加载着的会话。 */
+  private liveSessions: { get(id: SessionId): unknown } | undefined
 
   /**
    * 这段会话每次加载时带入了哪些记忆（见 MemoryInjection；最后一条是当前这次加载在用的）。
@@ -411,10 +430,22 @@ export class WorkbenchInspector extends TypertRemoteService {
    */
   @Remote
   async deleteSession(sessionId: SessionId, signature: string): Promise<void> {
-    // DSH-QoL：彻底删除依赖 DeepSeekGUI 给官方 session-controller 加的 deleteSession，
-    // 官方原版没有。保留签名以对上生成的远程接口描述，调用时如实拒绝。
-    void sessionId; void signature
-    throw new RemoteError('workbench/unsupported', 'deleting a session is not available in the official desktop app', {})
+    // DSH-QoL：DeepSeekGUI 的删除改在官方 session-controller / 持久化层里，官方原版没有
+    // 删除接口。这里只做最窄的一条路：只删「已归档、当前没被加载」的会话，在会话存储里
+    // 精确找到以会话 id 命名的目录后整个删掉，再发官方的 api-session/removed 让浏览器的
+    // 会话列表移除它；官方搜索索引下次与磁盘比对时自己清掉条目。signature 不再使用
+    // （GUI 用它做桌面授权），保留是为对上生成的远程接口描述。
+    void signature
+    const registry = this.registry
+    if (registry === undefined || !registry.archivedSessionIds.includes(sessionId)) {
+      throw new RemoteError('workbench/unsupported', 'only an archived session can be deleted', {})
+    }
+    if (this.liveSessions === undefined || this.liveSessions.get(sessionId) !== undefined) {
+      throw new RemoteError('workbench/session-busy', 'the session is still loaded; restart the app and try again', {})
+    }
+    const directory = findSessionDirectory(join(requiredHome(), 'sessions'), sessionId)
+    rmSync(directory, { recursive: true, force: false })
+    this.ctx.emit('api-session/removed', sessionId)
   }
 
   /**
@@ -469,6 +500,30 @@ function requiredHome(): string {
   const home = dshHome()
   if (home === undefined) throw new Error('no DSH home is available')
   return home
+}
+
+/**
+ * DSH-QoL：在官方会话存储里找到一个会话的目录：`<root>/<工作区编码>/<sessionId>/`。
+ * 只接受恰好一个、名字与 id 完全相同、不是链接、确实在 root 之下的目录。
+ * @param root - `<DSH home>/sessions`。
+ * @param sessionId - 会话 id（形如 `session-…`）。
+ * @returns 目录绝对路径。
+ */
+function findSessionDirectory(root: string, sessionId: string): string {
+  if (!/^session-[A-Za-z0-9-]+$/u.test(sessionId)) throw new Error(`unexpected session id: ${sessionId}`)
+  const matches: string[] = []
+  for (const group of readdirSync(root, { withFileTypes: true })) {
+    if (!group.isDirectory()) continue
+    const candidate = join(root, group.name, sessionId)
+    if (existsSync(candidate)) matches.push(candidate)
+  }
+  if (matches.length !== 1) throw new Error(`expected one stored directory for ${sessionId}, found ${String(matches.length)}`)
+  const directory = matches[0] as string
+  const stats = lstatSync(directory)
+  if (stats.isSymbolicLink() || !stats.isDirectory()) throw new Error(`refusing to delete a linked or non-directory session path: ${directory}`)
+  const rel = relative(root, directory)
+  if (rel.startsWith('..') || isAbsolute(rel)) throw new Error(`session path is outside session storage: ${directory}`)
+  return directory
 }
 
 /** DSH-QoL：全局记忆读取上限，与 DeepSeekGUI 主进程一致。 */
