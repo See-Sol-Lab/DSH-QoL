@@ -1,0 +1,2 @@
+# Sandbox permissions (DSH QoL Pack)
+The user enabled "Automatically remove the sandbox Low label" in the DSH QoL Pack. Each time DSH starts and exits, the plugin removes what the official Windows sandbox left on workspace folders: the sandbox capability-SID write grant, the Everyone deny-delete-children entry, and the Low integrity label (reset to Medium). The official sandbox adds them again the next time it runs a command in that folder. This is the user's own setting, not a fault.

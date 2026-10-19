@@ -19,8 +19,13 @@ import { AsyncResource } from 'node:async_hooks'
 import type {} from '@deepseek-ai/dsh-config-editor'
 // Type-only: the ctx.workspaceRegistry merge.
 import type {} from '@deepseek-ai/dsh-workspace'
+// Type-only: the ctx.systemPrompt merge.
+import type {} from '@deepseek-ai/dsh-system-prompt'
 import { defaultDshHome } from '@deepseek-ai/dsh-home-paths'
 import { collectRoots, revokeLowLabels, revokeLowLabelsSync } from './low-label.ts'
+import { EOL } from 'node:os'
+import SANDBOX_REVOKE_TEXT from '../assets/qol-sandbox-revoke.md'
+import SANDBOX_RULES_TEXT from '../assets/qol-sandbox-rules.md'
 
 export const name = 'dsh-qol'
 export const inject = ['configEditor']
@@ -84,7 +89,35 @@ export function apply(ctx: Context, config: Config): void {
   // 启动时也对齐一次：开关与官方条目不一致时（上次同步失败、手改过配置）自动补上。
   outside(sync)
 
-  if (process.platform === 'win32') applyLowLabelRevoke(ctx, config)
+  if (process.platform === 'win32') {
+    applyLowLabelRevoke(ctx, config)
+    applySandboxNote(ctx, config)
+  }
+}
+
+/** 给助手的沙箱说明：开关开着时说明插件会撤标签；不论开关，碰到权限报错都先停下问用户。 */
+const SANDBOX_NOTE_REVOKE = SANDBOX_REVOKE_TEXT.trimEnd()
+const SANDBOX_NOTE_RULES = SANDBOX_RULES_TEXT.trimEnd()
+
+/**
+ * 每次组装系统提示时，按开关给出沙箱说明（新会话 / 新窗口生效）。
+ * @param ctx - 插件上下文。
+ * @param config - 本包配置。
+ */
+function applySandboxNote(ctx: Context, config: Config): void {
+  ctx.inject(['systemPrompt'], (scoped) => {
+    const systemPrompt = (scoped as unknown as { systemPrompt: {
+      variable(name: string, provider: () => string): () => void
+      context(section: { name: string; order: number; text: string }): () => void
+    } }).systemPrompt
+    scoped.effect(() => {
+      const disposeVariable = systemPrompt.variable('dsh_qol_sandbox_note', () =>
+        config.revokeLowLabel.get() === false ? SANDBOX_NOTE_RULES : [SANDBOX_NOTE_REVOKE, SANDBOX_NOTE_RULES].join(EOL))
+      // 排在生活质量包说明（999_999）之前、记忆（1_000_000）之前。
+      const disposeSection = systemPrompt.context({ name: 'dsh-qol:sandbox', order: 999_998, text: '{{dsh_qol_sandbox_note}}' })
+      return () => { disposeSection(); disposeVariable() }
+    }, 'dsh-qol: sandbox note')
+  })
 }
 
 /** 进程级的退出清理状态：每次 apply 刷新，退出钩子只注册一次。 */
