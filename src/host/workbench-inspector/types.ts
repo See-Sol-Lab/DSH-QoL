@@ -252,3 +252,6 @@ export interface MemoryInjection {
   readonly sessionId: string
   readonly entries: readonly MemoryInjectionEntry[]
 }
+
+// DSH-QoL：技能库的类型一并从 @see-sol-lab/dsh-qol/types 导出（远程接口描述按这个路径引用）。
+export type * from './skill-manager/types.ts'

@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "DSH QoL Pack",
-    "description": "Quality-of-life details: the four kinds of reporting stay off until you turn them on in Settings; Changes, Git and Memory views beside the chat and a global memory page in Settings; Git and pull-request tools for the assistant (writes need approval) with result cards; project and global memory injected into every session."
+    "description": "Quality-of-life details: the four kinds of reporting stay off until you turn them on; Changes, Git, Project and Memory views beside the chat; global memory, archived sessions and a local skill library in Settings; Markdown session export; Git and pull-request tools for the assistant (writes need approval) with result cards; project and global memory injected into every session."
   }
 }

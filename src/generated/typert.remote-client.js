@@ -3,59 +3,235 @@ import { z } from 'zod'
 
 import { createTypertRemoteInfo } from '@deepseek-ai/dsh-typert-protocol/remote-info'
 
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_archiveMemoryState_parameter_0$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_archiveMemoryState_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_archiveMemoryState_parameter_0$schema$value ??= z.string())
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_archiveMemoryState_result$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_archiveMemoryState_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_archiveMemoryState_result$schema$value ??= z.object({
-  'settings': z.object({
-  'auto': z.boolean().readonly().describe('归档时自动整理（会调用一次当前模型服务，可能计费）。只有 noticeSeen 之后才真的自动跑。'),
-  'noticeSeen': z.boolean().readonly().describe('首次说明是否已经看过：没看过之前，归档只记 needs-consent，不调用模型。'),
-}).readonly(),
-  'record': z.union([z.literal(null), z.object({
-  'schemaVersion': z.literal(1).readonly(),
-  'sessionId': z.string().readonly(),
-  'status': z.union([z.literal("cancelled"), z.literal("failed"), z.literal("running"), z.literal("invalid"), z.literal("no-project"), z.literal("written"), z.literal("none"), z.literal("needs-consent"), z.literal("too-short"), z.literal("nothing-new"), z.literal("empty"), z.literal("protected"), z.literal("no-model"), z.literal("full"), z.literal("malformed"), z.literal("conflict"), z.literal("interrupted"), z.literal("gone")]).readonly(),
-  'manual': z.boolean().readonly().describe('用户手动发起（不看长度门槛）。'),
-  'processedThroughSeq': z.number().readonly().describe('已经处理过的来源边界：这一 seq 及之前的轮次不会再被整理。只在 written / none 时前进。'),
-  'startedAt': z.string().readonly(),
-  'finishedAt': z.string().readonly().optional(),
-  'input': z.object({
-  'userTurns': z.number().readonly(),
-  'chars': z.number().readonly(),
-  'throughSeq': z.number().readonly(),
-  'wholeUserTurns': z.number().readonly(),
-  'wholeChars': z.number().readonly(),
-}).readonly().optional().describe('本次新增材料与整段会话的规模（只数人说的话与助手正文）。'),
-  'coverage': z.object({
-  'fromSeq': z.union([z.literal(null), z.number()]).readonly(),
-  'throughSeq': z.number().readonly(),
-  'complete': z.boolean().readonly(),
-  'chars': z.number().readonly(),
-}).readonly().optional().describe('实际交给模型的对话范围：太长时只给最近的部分（complete = false）。'),
-  'memoryInput': z.object({
-  'sha256': z.string().readonly(),
-  'chars': z.number().readonly(),
-  'complete': z.boolean().readonly(),
-  'text': z.string().readonly(),
-}).readonly().optional().describe('当时交给模型的项目记忆（Sol P2-08：整理可追溯）：读到的全文摘要与字数，以及实际给模型的那段文本 （有界；超长时只含开头与整个自动整理区）。'),
-  'budgetChars': z.number().readonly().optional().describe('本次请求的字符预算（按配置与模型上下文收紧后的值）。'),
-  'cwd': z.string().readonly().optional(),
-  'projectPath': z.string().readonly().optional(),
-  'route': z.object({
-  'provider': z.string().readonly(),
-  'model': z.string().readonly(),
-}).readonly().optional(),
-  'finish': z.string().readonly().optional().describe('模型的结束原因（stop / tool-calls / max-tokens …）。'),
-  'output': z.string().readonly().optional().describe('模型原样输出（便于复验）。'),
-  'added': z.array(z.string()).readonly().optional().describe('写进项目记忆的条目。'),
-  'superseded': z.array(z.string()).readonly().optional().describe('被本次条目取代、改成删除线的旧自动条目。'),
-  'pending': z.array(z.string()).readonly().optional().describe('没写成（满了、冲突、标记残缺、受保护、写失败）时这次本来要写的条目。'),
-  'suggestions': z.array(z.string()).readonly().optional().describe('给全局记忆的建议（另存，等用户确认）。'),
-  'suggestionsDropped': z.number().readonly().optional().describe('建议列表已满、没能放进去的条数（不悄悄当成处理完）。'),
-  'rejected': z.number().readonly().optional().describe('不合格式、超限或像凭据而被丢掉的行数。'),
-  'error': z.string().readonly().optional(),
-})]).readonly(),
-  'running': z.boolean().readonly(),
+let _deepseek_ai_dsh_workbench_inspector_skillManager_applyImport_parameter_0$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_applyImport_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_applyImport_parameter_0$schema$value ??= z.object({
+  'path': z.string(),
+  'selections': z.array(z.object({
+  'key': z.string(),
+  'name': z.string().optional().describe('Final name; defaults to the declared name, then the proposal.'),
+  'description': z.string().optional().describe('Final description; defaults to the declared description, then the proposal.'),
+  'replaces': z.union([z.literal(null), z.string()]).describe('Install to replace, confirmed by the user from the preview\'s `replaces`; null installs beside existing entries.'),
+})),
+}))
+let _deepseek_ai_dsh_workbench_inspector_skillManager_applyImport_result$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_applyImport_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_applyImport_result$schema$value ??= z.object({
+  'installed': z.array(z.object({
+  'location': z.string().describe('Absolute install directory.'),
+  'status': z.union([z.literal("ok"), z.literal("invalid")]),
+  'issue': z.object({
+  'code': z.union([z.literal("missing-frontmatter"), z.literal("invalid-frontmatter"), z.literal("missing-name"), z.literal("invalid-name"), z.literal("missing-description"), z.literal("legacy-key"), z.literal("invalid-boolean"), z.literal("symlink-skipped"), z.literal("unsafe-path"), z.literal("too-many-files"), z.literal("too-large"), z.literal("zip-unreadable"), z.literal("zip-too-large"), z.literal("source-missing"), z.literal("source-unsupported"), z.literal("no-skill-found"), z.literal("candidate-missing"), z.literal("name-conflict"), z.literal("replace-target-missing"), z.literal("library-unwritable"), z.literal("manifest-invalid"), z.literal("skill-invalid"), z.literal("not-managed"), z.literal("io-error"), z.literal("no-project"), z.literal("unknown-install"), z.literal("revision-conflict")]),
+  'message': z.string().describe('Human-readable detail in English; the client maps `code` to localized copy.'),
+  'path': z.string().optional().describe('Posix-relative path inside the source or install the problem is about, when it is about one file.'),
+  'fixable': z.boolean().optional().describe('Whether the review can repair it in the installed copy (name and description proposals).'),
+}).optional().describe('Present when `status` is `invalid`: what is wrong with the installed `SKILL.md`.'),
+  'schemaVersion': z.literal(1),
+  'installId': z.string().describe('Directory name under the library; `<name>-<8 hex>`, kept across replacements.'),
+  'name': z.string(),
+  'description': z.string(),
+  'whenToUse': z.string().optional(),
+  'installedAt': z.string().describe('ISO time of the first install.'),
+  'updatedAt': z.string().describe('ISO time of the latest install or replacement.'),
+  'origin': z.object({
+  'kind': z.union([z.literal("directory"), z.literal("zip"), z.literal("markdown")]),
+  'path': z.string().describe('Absolute path of the directory, archive, or Markdown file that was imported.'),
+  'entry': z.string().describe('Posix-relative path of the skill entry inside the source (`SKILL.md`, `pack/a/SKILL.md`, or the file name).'),
+}),
+  'files': z.number().describe('Regular files copied into the install directory, excluding the manifest.'),
+  'bytes': z.number().describe('Bytes of those files.'),
+})),
+  'failures': z.array(z.object({
+  'key': z.string(),
+  'issue': z.object({
+  'code': z.union([z.literal("missing-frontmatter"), z.literal("invalid-frontmatter"), z.literal("missing-name"), z.literal("invalid-name"), z.literal("missing-description"), z.literal("legacy-key"), z.literal("invalid-boolean"), z.literal("symlink-skipped"), z.literal("unsafe-path"), z.literal("too-many-files"), z.literal("too-large"), z.literal("zip-unreadable"), z.literal("zip-too-large"), z.literal("source-missing"), z.literal("source-unsupported"), z.literal("no-skill-found"), z.literal("candidate-missing"), z.literal("name-conflict"), z.literal("replace-target-missing"), z.literal("library-unwritable"), z.literal("manifest-invalid"), z.literal("skill-invalid"), z.literal("not-managed"), z.literal("io-error"), z.literal("no-project"), z.literal("unknown-install"), z.literal("revision-conflict")]),
+  'message': z.string().describe('Human-readable detail in English; the client maps `code` to localized copy.'),
+  'path': z.string().optional().describe('Posix-relative path inside the source or install the problem is about, when it is about one file.'),
+  'fixable': z.boolean().optional().describe('Whether the review can repair it in the installed copy (name and description proposals).'),
+}),
+})),
+}))
+let _deepseek_ai_dsh_workbench_inspector_skillManager_installReferences_parameter_0$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_installReferences_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_installReferences_parameter_0$schema$value ??= z.string())
+let _deepseek_ai_dsh_workbench_inspector_skillManager_installReferences_result$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_installReferences_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_installReferences_result$schema$value ??= z.object({
+  'installId': z.string(),
+  'projects': z.array(z.object({
+  'key': z.string().describe('Project key: sha256 of the canonical folder path (see `SkillProjectView.project`).'),
+  'path': z.string().describe('Canonical project folder as recorded when the selection was saved.'),
+})),
+}))
+let _deepseek_ai_dsh_workbench_inspector_skillManager_inventory_result$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_inventory_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_inventory_result$schema$value ??= z.object({
+  'libraryDir': z.string().describe('Absolute library directory under the active DSH home.'),
+  'installed': z.array(z.object({
+  'location': z.string().describe('Absolute install directory.'),
+  'status': z.union([z.literal("ok"), z.literal("invalid")]),
+  'issue': z.object({
+  'code': z.union([z.literal("missing-frontmatter"), z.literal("invalid-frontmatter"), z.literal("missing-name"), z.literal("invalid-name"), z.literal("missing-description"), z.literal("legacy-key"), z.literal("invalid-boolean"), z.literal("symlink-skipped"), z.literal("unsafe-path"), z.literal("too-many-files"), z.literal("too-large"), z.literal("zip-unreadable"), z.literal("zip-too-large"), z.literal("source-missing"), z.literal("source-unsupported"), z.literal("no-skill-found"), z.literal("candidate-missing"), z.literal("name-conflict"), z.literal("replace-target-missing"), z.literal("library-unwritable"), z.literal("manifest-invalid"), z.literal("skill-invalid"), z.literal("not-managed"), z.literal("io-error"), z.literal("no-project"), z.literal("unknown-install"), z.literal("revision-conflict")]),
+  'message': z.string().describe('Human-readable detail in English; the client maps `code` to localized copy.'),
+  'path': z.string().optional().describe('Posix-relative path inside the source or install the problem is about, when it is about one file.'),
+  'fixable': z.boolean().optional().describe('Whether the review can repair it in the installed copy (name and description proposals).'),
+}).optional().describe('Present when `status` is `invalid`: what is wrong with the installed `SKILL.md`.'),
+  'schemaVersion': z.literal(1),
+  'installId': z.string().describe('Directory name under the library; `<name>-<8 hex>`, kept across replacements.'),
+  'name': z.string(),
+  'description': z.string(),
+  'whenToUse': z.string().optional(),
+  'installedAt': z.string().describe('ISO time of the first install.'),
+  'updatedAt': z.string().describe('ISO time of the latest install or replacement.'),
+  'origin': z.object({
+  'kind': z.union([z.literal("directory"), z.literal("zip"), z.literal("markdown")]),
+  'path': z.string().describe('Absolute path of the directory, archive, or Markdown file that was imported.'),
+  'entry': z.string().describe('Posix-relative path of the skill entry inside the source (`SKILL.md`, `pack/a/SKILL.md`, or the file name).'),
+}),
+  'files': z.number().describe('Regular files copied into the install directory, excluding the manifest.'),
+  'bytes': z.number().describe('Bytes of those files.'),
+})),
+  'orphans': z.array(z.string()).describe('Directory names under the library without a readable manifest; never touched by uninstall.'),
+  'readOnly': z.array(z.object({
+  'source': z.union([z.literal("user-dsh"), z.literal("user-agents"), z.literal("bundled")]),
+  'name': z.string(),
+  'description': z.string(),
+  'location': z.string().describe('Absolute path of the skill file.'),
+})),
+}))
+let _deepseek_ai_dsh_workbench_inspector_skillManager_previewImport_parameter_0$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_previewImport_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_previewImport_parameter_0$schema$value ??= z.string())
+let _deepseek_ai_dsh_workbench_inspector_skillManager_previewImport_result$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_previewImport_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_previewImport_result$schema$value ??= z.object({
+  'source': z.object({
+  'kind': z.union([z.literal("directory"), z.literal("zip"), z.literal("markdown")]),
+  'path': z.string(),
+}),
+  'candidates': z.array(z.object({
+  'key': z.string().describe('Identifies the candidate within the preview; passed back in the apply request.'),
+  'entry': z.string().describe('Posix-relative path of the entry inside the source.'),
+  'kind': z.union([z.literal("markdown"), z.literal("skill")]),
+  'name': z.union([z.literal(null), z.string()]).describe('Name declared by the entry\'s frontmatter; null when missing or invalid.'),
+  'description': z.union([z.literal(null), z.string()]).describe('Description declared by the entry\'s frontmatter; null when missing.'),
+  'whenToUse': z.string().optional(),
+  'proposed': z.object({
+  'name': z.string().optional(),
+  'description': z.string().optional(),
+}).describe('Proposed values for missing metadata; applied only to the installed copy.'),
+  'issues': z.array(z.object({
+  'code': z.union([z.literal("missing-frontmatter"), z.literal("invalid-frontmatter"), z.literal("missing-name"), z.literal("invalid-name"), z.literal("missing-description"), z.literal("legacy-key"), z.literal("invalid-boolean"), z.literal("symlink-skipped"), z.literal("unsafe-path"), z.literal("too-many-files"), z.literal("too-large"), z.literal("zip-unreadable"), z.literal("zip-too-large"), z.literal("source-missing"), z.literal("source-unsupported"), z.literal("no-skill-found"), z.literal("candidate-missing"), z.literal("name-conflict"), z.literal("replace-target-missing"), z.literal("library-unwritable"), z.literal("manifest-invalid"), z.literal("skill-invalid"), z.literal("not-managed"), z.literal("io-error"), z.literal("no-project"), z.literal("unknown-install"), z.literal("revision-conflict")]),
+  'message': z.string().describe('Human-readable detail in English; the client maps `code` to localized copy.'),
+  'path': z.string().optional().describe('Posix-relative path inside the source or install the problem is about, when it is about one file.'),
+  'fixable': z.boolean().optional().describe('Whether the review can repair it in the installed copy (name and description proposals).'),
+})).describe('Problems found; blocking ones have `fixable` unset or false.'),
+  'files': z.number().describe('Regular files under the candidate\'s directory, including the entry.'),
+  'bytes': z.number(),
+  'replaces': z.union([z.literal(null), z.object({
+  'installId': z.string(),
+  'name': z.string(),
+  'origin': z.object({
+  'kind': z.union([z.literal("directory"), z.literal("zip"), z.literal("markdown")]),
+  'path': z.string().describe('Absolute path of the directory, archive, or Markdown file that was imported.'),
+  'entry': z.string().describe('Posix-relative path of the skill entry inside the source (`SKILL.md`, `pack/a/SKILL.md`, or the file name).'),
+}),
+  'location': z.string(),
+})]).describe('Install the candidate would replace (matched by origin first, then by name), named so the actual target is visible; null when none.'),
+  'installable': z.boolean().describe('Whether the candidate can be installed as reviewed (no blocking issue, and a name plus description resolve).'),
+})),
+  'problems': z.array(z.object({
+  'code': z.union([z.literal("missing-frontmatter"), z.literal("invalid-frontmatter"), z.literal("missing-name"), z.literal("invalid-name"), z.literal("missing-description"), z.literal("legacy-key"), z.literal("invalid-boolean"), z.literal("symlink-skipped"), z.literal("unsafe-path"), z.literal("too-many-files"), z.literal("too-large"), z.literal("zip-unreadable"), z.literal("zip-too-large"), z.literal("source-missing"), z.literal("source-unsupported"), z.literal("no-skill-found"), z.literal("candidate-missing"), z.literal("name-conflict"), z.literal("replace-target-missing"), z.literal("library-unwritable"), z.literal("manifest-invalid"), z.literal("skill-invalid"), z.literal("not-managed"), z.literal("io-error"), z.literal("no-project"), z.literal("unknown-install"), z.literal("revision-conflict")]),
+  'message': z.string().describe('Human-readable detail in English; the client maps `code` to localized copy.'),
+  'path': z.string().optional().describe('Posix-relative path inside the source or install the problem is about, when it is about one file.'),
+  'fixable': z.boolean().optional().describe('Whether the review can repair it in the installed copy (name and description proposals).'),
+})).describe('Problems with the source itself (unreadable, unsupported, nothing found).'),
+}))
+let _deepseek_ai_dsh_workbench_inspector_skillManager_projectView_parameter_0$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_projectView_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_projectView_parameter_0$schema$value ??= z.string())
+let _deepseek_ai_dsh_workbench_inspector_skillManager_projectView_result$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_projectView_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_projectView_result$schema$value ??= z.object({
+  'sessionId': z.string(),
+  'project': z.union([z.literal(null), z.object({
+  'key': z.string().describe('Project key: sha256 of the canonical folder path (see `SkillProjectView.project`).'),
+  'path': z.string().describe('Canonical project folder as recorded when the selection was saved.'),
+})]).describe('The session\'s project folder (canonical path and its key); null when the session has none.'),
+  'problem': z.union([z.literal("no-cwd"), z.literal("missing-folder")]).optional().describe('Why `project` is null or unusable.'),
+  'revision': z.number().describe('Revision of the saved selection; 0 before the first save. Sent back with a save.'),
+  'entries': z.array(z.object({
+  'installId': z.string(),
+  'name': z.string(),
+  'description': z.string(),
+  'status': z.union([z.literal("ok"), z.literal("invalid")]),
+  'issue': z.object({
+  'code': z.union([z.literal("missing-frontmatter"), z.literal("invalid-frontmatter"), z.literal("missing-name"), z.literal("invalid-name"), z.literal("missing-description"), z.literal("legacy-key"), z.literal("invalid-boolean"), z.literal("symlink-skipped"), z.literal("unsafe-path"), z.literal("too-many-files"), z.literal("too-large"), z.literal("zip-unreadable"), z.literal("zip-too-large"), z.literal("source-missing"), z.literal("source-unsupported"), z.literal("no-skill-found"), z.literal("candidate-missing"), z.literal("name-conflict"), z.literal("replace-target-missing"), z.literal("library-unwritable"), z.literal("manifest-invalid"), z.literal("skill-invalid"), z.literal("not-managed"), z.literal("io-error"), z.literal("no-project"), z.literal("unknown-install"), z.literal("revision-conflict")]),
+  'message': z.string().describe('Human-readable detail in English; the client maps `code` to localized copy.'),
+  'path': z.string().optional().describe('Posix-relative path inside the source or install the problem is about, when it is about one file.'),
+  'fixable': z.boolean().optional().describe('Whether the review can repair it in the installed copy (name and description proposals).'),
+}).optional().describe('Present when `status` is `invalid`.'),
+  'enabled': z.boolean().describe('Whether the project\'s saved selection includes this install.'),
+  'effect': z.union([z.literal("active"), z.literal("missing"), z.literal("inactive"), z.literal("invalid"), z.literal("shadowed")]),
+  'shadowedBy': z.object({
+  'source': z.string(),
+  'provider': z.string(),
+}).optional().describe('The winning same-name skill\'s source and provider when `effect` is `shadowed`.'),
+})),
+  'catalogComplete': z.boolean().describe('Whether the session\'s real catalog could be read; false means `effect` is a best guess from the selection alone.'),
+}))
+let _deepseek_ai_dsh_workbench_inspector_skillManager_setProjectSelection_parameter_0$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_setProjectSelection_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_setProjectSelection_parameter_0$schema$value ??= z.object({
+  'sessionId': z.string(),
+  'enabled': z.array(z.string()).describe('The complete list of install ids the project may use.'),
+  'revision': z.number().describe('The revision the page was rendered from; a different stored revision refuses the save.'),
+}))
+let _deepseek_ai_dsh_workbench_inspector_skillManager_setProjectSelection_result$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_setProjectSelection_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_setProjectSelection_result$schema$value ??= z.object({
+  'saved': z.boolean(),
+  'issue': z.object({
+  'code': z.union([z.literal("missing-frontmatter"), z.literal("invalid-frontmatter"), z.literal("missing-name"), z.literal("invalid-name"), z.literal("missing-description"), z.literal("legacy-key"), z.literal("invalid-boolean"), z.literal("symlink-skipped"), z.literal("unsafe-path"), z.literal("too-many-files"), z.literal("too-large"), z.literal("zip-unreadable"), z.literal("zip-too-large"), z.literal("source-missing"), z.literal("source-unsupported"), z.literal("no-skill-found"), z.literal("candidate-missing"), z.literal("name-conflict"), z.literal("replace-target-missing"), z.literal("library-unwritable"), z.literal("manifest-invalid"), z.literal("skill-invalid"), z.literal("not-managed"), z.literal("io-error"), z.literal("no-project"), z.literal("unknown-install"), z.literal("revision-conflict")]),
+  'message': z.string().describe('Human-readable detail in English; the client maps `code` to localized copy.'),
+  'path': z.string().optional().describe('Posix-relative path inside the source or install the problem is about, when it is about one file.'),
+  'fixable': z.boolean().optional().describe('Whether the review can repair it in the installed copy (name and description proposals).'),
+}).optional().describe('Present when `saved` is false.'),
+  'view': z.object({
+  'sessionId': z.string(),
+  'project': z.union([z.literal(null), z.object({
+  'key': z.string().describe('Project key: sha256 of the canonical folder path (see `SkillProjectView.project`).'),
+  'path': z.string().describe('Canonical project folder as recorded when the selection was saved.'),
+})]).describe('The session\'s project folder (canonical path and its key); null when the session has none.'),
+  'problem': z.union([z.literal("no-cwd"), z.literal("missing-folder")]).optional().describe('Why `project` is null or unusable.'),
+  'revision': z.number().describe('Revision of the saved selection; 0 before the first save. Sent back with a save.'),
+  'entries': z.array(z.object({
+  'installId': z.string(),
+  'name': z.string(),
+  'description': z.string(),
+  'status': z.union([z.literal("ok"), z.literal("invalid")]),
+  'issue': z.object({
+  'code': z.union([z.literal("missing-frontmatter"), z.literal("invalid-frontmatter"), z.literal("missing-name"), z.literal("invalid-name"), z.literal("missing-description"), z.literal("legacy-key"), z.literal("invalid-boolean"), z.literal("symlink-skipped"), z.literal("unsafe-path"), z.literal("too-many-files"), z.literal("too-large"), z.literal("zip-unreadable"), z.literal("zip-too-large"), z.literal("source-missing"), z.literal("source-unsupported"), z.literal("no-skill-found"), z.literal("candidate-missing"), z.literal("name-conflict"), z.literal("replace-target-missing"), z.literal("library-unwritable"), z.literal("manifest-invalid"), z.literal("skill-invalid"), z.literal("not-managed"), z.literal("io-error"), z.literal("no-project"), z.literal("unknown-install"), z.literal("revision-conflict")]),
+  'message': z.string().describe('Human-readable detail in English; the client maps `code` to localized copy.'),
+  'path': z.string().optional().describe('Posix-relative path inside the source or install the problem is about, when it is about one file.'),
+  'fixable': z.boolean().optional().describe('Whether the review can repair it in the installed copy (name and description proposals).'),
+}).optional().describe('Present when `status` is `invalid`.'),
+  'enabled': z.boolean().describe('Whether the project\'s saved selection includes this install.'),
+  'effect': z.union([z.literal("active"), z.literal("missing"), z.literal("inactive"), z.literal("invalid"), z.literal("shadowed")]),
+  'shadowedBy': z.object({
+  'source': z.string(),
+  'provider': z.string(),
+}).optional().describe('The winning same-name skill\'s source and provider when `effect` is `shadowed`.'),
+})),
+  'catalogComplete': z.boolean().describe('Whether the session\'s real catalog could be read; false means `effect` is a best guess from the selection alone.'),
+}).describe('The page as it reads after the attempt (fresh on conflict, so the person sees what won).'),
+}))
+let _deepseek_ai_dsh_workbench_inspector_skillManager_uninstall_parameter_0$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_uninstall_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_uninstall_parameter_0$schema$value ??= z.string())
+let _deepseek_ai_dsh_workbench_inspector_skillManager_uninstall_result$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_uninstall_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_uninstall_result$schema$value ??= z.object({
+  'installId': z.string(),
+  'location': z.string().describe('Absolute directory that was (or would have been) removed.'),
+  'removed': z.boolean(),
+  'issue': z.object({
+  'code': z.union([z.literal("missing-frontmatter"), z.literal("invalid-frontmatter"), z.literal("missing-name"), z.literal("invalid-name"), z.literal("missing-description"), z.literal("legacy-key"), z.literal("invalid-boolean"), z.literal("symlink-skipped"), z.literal("unsafe-path"), z.literal("too-many-files"), z.literal("too-large"), z.literal("zip-unreadable"), z.literal("zip-too-large"), z.literal("source-missing"), z.literal("source-unsupported"), z.literal("no-skill-found"), z.literal("candidate-missing"), z.literal("name-conflict"), z.literal("replace-target-missing"), z.literal("library-unwritable"), z.literal("manifest-invalid"), z.literal("skill-invalid"), z.literal("not-managed"), z.literal("io-error"), z.literal("no-project"), z.literal("unknown-install"), z.literal("revision-conflict")]),
+  'message': z.string().describe('Human-readable detail in English; the client maps `code` to localized copy.'),
+  'path': z.string().optional().describe('Posix-relative path inside the source or install the problem is about, when it is about one file.'),
+  'fixable': z.boolean().optional().describe('Whether the review can repair it in the installed copy (name and description proposals).'),
+}).optional().describe('Present when `removed` is false.'),
+  'affected': z.array(z.object({
+  'key': z.string().describe('Project key: sha256 of the canonical folder path (see `SkillProjectView.project`).'),
+  'path': z.string().describe('Canonical project folder as recorded when the selection was saved.'),
+})).describe('Projects whose selection still names this install. The references stay in place as missing entries — nothing switches to another skill of the same name — until each project clears them.'),
 }))
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_cleanSandboxMarks_parameter_0$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_cleanSandboxMarks_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_cleanSandboxMarks_parameter_0$schema$value ??= z.string())
@@ -137,7 +313,7 @@ const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_memoryInjection_re
   'capBytes': z.number().readonly().describe('每个文件的读取上限（字节）。'),
   'global': z.object({
   'path': z.string().readonly(),
-  'status': z.union([z.literal("absent"), z.literal("empty"), z.literal("present"), z.literal("truncated"), z.literal("unreadable")]).readonly(),
+  'status': z.union([z.literal("absent"), z.literal("present"), z.literal("empty"), z.literal("truncated"), z.literal("unreadable")]).readonly(),
   'bytes': z.number().readonly().describe('实际带入的 UTF-8 字节数与字符数（code points）。'),
   'chars': z.number().readonly(),
   'sha256': z.string().readonly().describe('实际带入文本的 SHA-256：同样长度、不同内容也分得开。'),
@@ -145,7 +321,7 @@ const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_memoryInjection_re
 }).readonly(),
   'project': z.object({
   'path': z.string().readonly(),
-  'status': z.union([z.literal("absent"), z.literal("empty"), z.literal("present"), z.literal("truncated"), z.literal("unreadable")]).readonly(),
+  'status': z.union([z.literal("absent"), z.literal("present"), z.literal("empty"), z.literal("truncated"), z.literal("unreadable")]).readonly(),
   'bytes': z.number().readonly().describe('实际带入的 UTF-8 字节数与字符数（code points）。'),
   'chars': z.number().readonly(),
   'sha256': z.string().readonly().describe('实际带入文本的 SHA-256：同样长度、不同内容也分得开。'),
@@ -153,13 +329,6 @@ const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_memoryInjection_re
 }).readonly(),
 })).readonly(),
 })]))
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_memorySuggestions_result$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_memorySuggestions_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_memorySuggestions_result$schema$value ??= z.array(z.object({
-  'id': z.string().readonly(),
-  'text': z.string().readonly(),
-  'sessionId': z.string().readonly(),
-  'at': z.string().readonly(),
-})))
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_overview_parameter_0$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_overview_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_overview_parameter_0$schema$value ??= z.string())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_overview_result$schema$value
@@ -178,7 +347,7 @@ const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_overview_result$sc
   'behind': z.number(),
 }).optional().describe('Upstream ref plus ahead/behind from `# branch.upstream` / `# branch.ab`.'),
   'entries': z.array(z.object({
-  'kind': z.union([z.literal("conflict"), z.literal("staged"), z.literal("unstaged"), z.literal("untracked")]).describe('Which surface reports the change: `conflict` for unmerged records (`u`), `untracked` for `?` records, `staged` when the index column differs from `.`, `unstaged` when only the work-tree column differs.'),
+  'kind': z.union([z.literal("staged"), z.literal("unstaged"), z.literal("untracked"), z.literal("conflict")]).describe('Which surface reports the change: `conflict` for unmerged records (`u`), `untracked` for `?` records, `staged` when the index column differs from `.`, `unstaged` when only the work-tree column differs.'),
   'path': z.string().describe('Path relative to the repo root.'),
   'origPath': z.string().optional().describe('Original path for a rename/copy (the `2` record\'s second path).'),
   'x': z.union([z.literal("."), z.literal("A"), z.literal("M"), z.literal("D"), z.literal("R"), z.literal("C"), z.literal("U"), z.literal("T"), z.literal("?"), z.literal("AM"), z.literal("AD"), z.literal("AU"), z.literal("AA"), z.literal("DD"), z.literal("DU"), z.literal("UA"), z.literal("UD"), z.literal("UU")]).describe('Index status column (`X` of `XY`).'),
@@ -208,10 +377,6 @@ const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_overview_result$sc
   'bare': z.boolean().describe('True for the bare repository itself.'),
 })),
 }))
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_resolveMemorySuggestion_parameter_0$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_resolveMemorySuggestion_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_resolveMemorySuggestion_parameter_0$schema$value ??= z.string())
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_resolveMemorySuggestion_result$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_resolveMemorySuggestion_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_resolveMemorySuggestion_result$schema$value ??= z.boolean())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveGlobalMemory_parameter_0$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveGlobalMemory_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveGlobalMemory_parameter_0$schema$value ??= z.string())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveGlobalMemory_parameter_1$schema$value
@@ -226,15 +391,6 @@ let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveProjectMemory_pa
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveProjectMemory_parameter_2$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveProjectMemory_parameter_2$schema$value ??= z.string())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveProjectMemory_result$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveProjectMemory_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveProjectMemory_result$schema$value ??= z.void())
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_0$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_0$schema$value ??= z.union([z.literal(null), z.literal(false), z.literal(true)]))
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_1$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_1$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_1$schema$value ??= z.union([z.literal(null), z.literal(false), z.literal(true)]))
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_result$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_result$schema$value ??= z.object({
-  'auto': z.boolean().readonly().describe('归档时自动整理（会调用一次当前模型服务，可能计费）。只有 noticeSeen 之后才真的自动跑。'),
-  'noticeSeen': z.boolean().readonly().describe('首次说明是否已经看过：没看过之前，归档只记 needs-consent，不调用模型。'),
-}))
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_status_parameter_0$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_status_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_status_parameter_0$schema$value ??= z.string())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_status_result$schema$value
@@ -253,7 +409,7 @@ const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_status_result$sche
   'behind': z.number(),
 }).optional().describe('Upstream ref plus ahead/behind from `# branch.upstream` / `# branch.ab`.'),
   'entries': z.array(z.object({
-  'kind': z.union([z.literal("conflict"), z.literal("staged"), z.literal("unstaged"), z.literal("untracked")]).describe('Which surface reports the change: `conflict` for unmerged records (`u`), `untracked` for `?` records, `staged` when the index column differs from `.`, `unstaged` when only the work-tree column differs.'),
+  'kind': z.union([z.literal("staged"), z.literal("unstaged"), z.literal("untracked"), z.literal("conflict")]).describe('Which surface reports the change: `conflict` for unmerged records (`u`), `untracked` for `?` records, `staged` when the index column differs from `.`, `unstaged` when only the work-tree column differs.'),
   'path': z.string().describe('Path relative to the repo root.'),
   'origPath': z.string().optional().describe('Original path for a rename/copy (the `2` record\'s second path).'),
   'x': z.union([z.literal("."), z.literal("A"), z.literal("M"), z.literal("D"), z.literal("R"), z.literal("C"), z.literal("U"), z.literal("T"), z.literal("?"), z.literal("AM"), z.literal("AD"), z.literal("AU"), z.literal("AA"), z.literal("DD"), z.literal("DU"), z.literal("UA"), z.literal("UD"), z.literal("UU")]).describe('Index status column (`X` of `XY`).'),
@@ -261,53 +417,6 @@ const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_status_result$sche
   'score': z.string().optional().describe('Rename/copy similarity score (`R100` / `C75`), when present.'),
 })).describe('Every changed path, in porcelain v2 record order.'),
 }),
-}))
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_summarizeSession_parameter_0$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_summarizeSession_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_summarizeSession_parameter_0$schema$value ??= z.string())
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_summarizeSession_result$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_summarizeSession_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_summarizeSession_result$schema$value ??= z.object({
-  'schemaVersion': z.literal(1).readonly(),
-  'sessionId': z.string().readonly(),
-  'status': z.union([z.literal("cancelled"), z.literal("failed"), z.literal("running"), z.literal("invalid"), z.literal("no-project"), z.literal("written"), z.literal("none"), z.literal("needs-consent"), z.literal("too-short"), z.literal("nothing-new"), z.literal("empty"), z.literal("protected"), z.literal("no-model"), z.literal("full"), z.literal("malformed"), z.literal("conflict"), z.literal("interrupted"), z.literal("gone")]).readonly(),
-  'manual': z.boolean().readonly().describe('用户手动发起（不看长度门槛）。'),
-  'processedThroughSeq': z.number().readonly().describe('已经处理过的来源边界：这一 seq 及之前的轮次不会再被整理。只在 written / none 时前进。'),
-  'startedAt': z.string().readonly(),
-  'finishedAt': z.string().readonly().optional(),
-  'input': z.object({
-  'userTurns': z.number().readonly(),
-  'chars': z.number().readonly(),
-  'throughSeq': z.number().readonly(),
-  'wholeUserTurns': z.number().readonly(),
-  'wholeChars': z.number().readonly(),
-}).readonly().optional().describe('本次新增材料与整段会话的规模（只数人说的话与助手正文）。'),
-  'coverage': z.object({
-  'fromSeq': z.union([z.literal(null), z.number()]).readonly(),
-  'throughSeq': z.number().readonly(),
-  'complete': z.boolean().readonly(),
-  'chars': z.number().readonly(),
-}).readonly().optional().describe('实际交给模型的对话范围：太长时只给最近的部分（complete = false）。'),
-  'memoryInput': z.object({
-  'sha256': z.string().readonly(),
-  'chars': z.number().readonly(),
-  'complete': z.boolean().readonly(),
-  'text': z.string().readonly(),
-}).readonly().optional().describe('当时交给模型的项目记忆（Sol P2-08：整理可追溯）：读到的全文摘要与字数，以及实际给模型的那段文本 （有界；超长时只含开头与整个自动整理区）。'),
-  'budgetChars': z.number().readonly().optional().describe('本次请求的字符预算（按配置与模型上下文收紧后的值）。'),
-  'cwd': z.string().readonly().optional(),
-  'projectPath': z.string().readonly().optional(),
-  'route': z.object({
-  'provider': z.string().readonly(),
-  'model': z.string().readonly(),
-}).readonly().optional(),
-  'finish': z.string().readonly().optional().describe('模型的结束原因（stop / tool-calls / max-tokens …）。'),
-  'output': z.string().readonly().optional().describe('模型原样输出（便于复验）。'),
-  'added': z.array(z.string()).readonly().optional().describe('写进项目记忆的条目。'),
-  'superseded': z.array(z.string()).readonly().optional().describe('被本次条目取代、改成删除线的旧自动条目。'),
-  'pending': z.array(z.string()).readonly().optional().describe('没写成（满了、冲突、标记残缺、受保护、写失败）时这次本来要写的条目。'),
-  'suggestions': z.array(z.string()).readonly().optional().describe('给全局记忆的建议（另存，等用户确认）。'),
-  'suggestionsDropped': z.number().readonly().optional().describe('建议列表已满、没能放进去的条数（不悄悄当成处理完）。'),
-  'rejected': z.number().readonly().optional().describe('不合格式、超限或像凭据而被丢掉的行数。'),
-  'error': z.string().readonly().optional(),
 }))
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_text_parameter_0$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_text_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_text_parameter_0$schema$value ??= z.string())
@@ -320,8 +429,30 @@ const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_text_result$schema
   'path': z.string(),
   'text': z.string(),
 }))
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_archiveMemoryState_parameter_0_strict$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_archiveMemoryState_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_archiveMemoryState_parameter_0_strict$schema$value ??= z.string())
+let _deepseek_ai_dsh_workbench_inspector_skillManager_applyImport_parameter_0_strict$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_applyImport_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_applyImport_parameter_0_strict$schema$value ??= z.strictObject({
+  'path': z.string(),
+  'selections': z.array(z.strictObject({
+  'key': z.string(),
+  'name': z.string().optional().describe('Final name; defaults to the declared name, then the proposal.'),
+  'description': z.string().optional().describe('Final description; defaults to the declared description, then the proposal.'),
+  'replaces': z.union([z.literal(null), z.string()]).describe('Install to replace, confirmed by the user from the preview\'s `replaces`; null installs beside existing entries.'),
+})),
+}))
+let _deepseek_ai_dsh_workbench_inspector_skillManager_installReferences_parameter_0_strict$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_installReferences_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_installReferences_parameter_0_strict$schema$value ??= z.string())
+let _deepseek_ai_dsh_workbench_inspector_skillManager_previewImport_parameter_0_strict$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_previewImport_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_previewImport_parameter_0_strict$schema$value ??= z.string())
+let _deepseek_ai_dsh_workbench_inspector_skillManager_projectView_parameter_0_strict$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_projectView_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_projectView_parameter_0_strict$schema$value ??= z.string())
+let _deepseek_ai_dsh_workbench_inspector_skillManager_setProjectSelection_parameter_0_strict$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_setProjectSelection_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_setProjectSelection_parameter_0_strict$schema$value ??= z.strictObject({
+  'sessionId': z.string(),
+  'enabled': z.array(z.string()).describe('The complete list of install ids the project may use.'),
+  'revision': z.number().describe('The revision the page was rendered from; a different stored revision refuses the save.'),
+}))
+let _deepseek_ai_dsh_workbench_inspector_skillManager_uninstall_parameter_0_strict$schema$value
+const _deepseek_ai_dsh_workbench_inspector_skillManager_uninstall_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_skillManager_uninstall_parameter_0_strict$schema$value ??= z.string())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_cleanSandboxMarks_parameter_0_strict$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_cleanSandboxMarks_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_cleanSandboxMarks_parameter_0_strict$schema$value ??= z.string())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_createProjectAgents_parameter_0_strict$schema$value
@@ -352,8 +483,6 @@ let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_memoryInjection_para
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_memoryInjection_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_memoryInjection_parameter_0_strict$schema$value ??= z.string())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_overview_parameter_0_strict$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_overview_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_overview_parameter_0_strict$schema$value ??= z.string())
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_resolveMemorySuggestion_parameter_0_strict$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_resolveMemorySuggestion_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_resolveMemorySuggestion_parameter_0_strict$schema$value ??= z.string())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveGlobalMemory_parameter_0_strict$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveGlobalMemory_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveGlobalMemory_parameter_0_strict$schema$value ??= z.string())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveGlobalMemory_parameter_1_strict$schema$value
@@ -364,14 +493,8 @@ let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveProjectMemory_pa
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveProjectMemory_parameter_1_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveProjectMemory_parameter_1_strict$schema$value ??= z.string())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveProjectMemory_parameter_2_strict$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveProjectMemory_parameter_2_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_saveProjectMemory_parameter_2_strict$schema$value ??= z.string())
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_0_strict$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_0_strict$schema$value ??= z.union([z.literal(null), z.literal(false), z.literal(true)]))
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_1_strict$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_1_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_1_strict$schema$value ??= z.union([z.literal(null), z.literal(false), z.literal(true)]))
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_status_parameter_0_strict$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_status_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_status_parameter_0_strict$schema$value ??= z.string())
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_summarizeSession_parameter_0_strict$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_summarizeSession_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_summarizeSession_parameter_0_strict$schema$value ??= z.string())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_text_parameter_0_strict$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_text_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_text_parameter_0_strict$schema$value ??= z.string())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_text_parameter_1_strict$schema$value
@@ -382,25 +505,58 @@ const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_text_parameter_2_s
 export const TYPERT_REMOTE = createTypertRemoteInfo({
   package: '@see-sol-lab/dsh-qol',
   methods: {
-    'workbenchInspector/archiveMemoryState': {
-      service: 'workbenchInspector',
-      description: '记忆视图读的归档整理事实：开关、这段会话的整理记录、是否正在整理。',
+    'skillManager/applyImport': {
+      service: 'skillManager',
+      description: 'Install the reviewed selections of one source.',
       invocation: { kind: 'direct' },
       parameters: [
         {
-          name: 'sessionId',
-          description: '会话。',
+          name: 'request',
+          description: 'Source path and selections confirmed from the preview.',
           source: 'json',
           codec: {
             mode: 'strict',
-            typeSymbol: '@deepseek-ai/dsh-session/types#SessionId',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_archiveMemoryState_parameter_0$schema,
+            typeSymbol: '@see-sol-lab/dsh-qol/types#SkillImportRequest',
+            create: _deepseek_ai_dsh_workbench_inspector_skillManager_applyImport_parameter_0$schema,
+            jsonSchema: {"type":"object","properties":{"path":{"type":"string"},"selections":{"type":"array","items":{"type":"object","properties":{"key":{"type":"string"},"name":{"type":"string","description":"Final name; defaults to the declared name, then the proposal."},"description":{"type":"string","description":"Final description; defaults to the declared description, then the proposal."},"replaces":{"oneOf":[{"type":"null","const":null},{"type":"string"}],"description":"Install to replace, confirmed by the user from the preview's `replaces`; null installs beside existing entries."}},"required":["key","replaces"],"additionalProperties":true}}},"required":["path","selections"],"additionalProperties":true},
+          },
+          strictCodec: {
+            mode: 'strict',
+            typeSymbol: '@see-sol-lab/dsh-qol/types#SkillImportRequest',
+            create: _deepseek_ai_dsh_workbench_inspector_skillManager_applyImport_parameter_0_strict$schema,
+            jsonSchema: {"type":"object","properties":{"path":{"type":"string"},"selections":{"type":"array","items":{"type":"object","properties":{"key":{"type":"string"},"name":{"type":"string","description":"Final name; defaults to the declared name, then the proposal."},"description":{"type":"string","description":"Final description; defaults to the declared description, then the proposal."},"replaces":{"oneOf":[{"type":"null","const":null},{"type":"string"}],"description":"Install to replace, confirmed by the user from the preview's `replaces`; null installs beside existing entries."}},"required":["key","replaces"],"additionalProperties":false}}},"required":["path","selections"],"additionalProperties":false},
+          },
+        },
+      ],
+      cancellation: { parameter: 'signal' },
+      result: {
+        mode: 'strict',
+        typeSymbol: '@see-sol-lab/dsh-qol/types#SkillImportOutcome',
+        create: _deepseek_ai_dsh_workbench_inspector_skillManager_applyImport_result$schema,
+        description: 'installs and per-selection failures.',
+        jsonSchema: {"type":"object","properties":{"installed":{"type":"array","items":{"type":"object","properties":{"location":{"type":"string","description":"Absolute install directory."},"status":{"type":"string","enum":["ok","invalid"]},"issue":{"type":"object","properties":{"code":{"type":"string","enum":["missing-frontmatter","invalid-frontmatter","missing-name","invalid-name","missing-description","legacy-key","invalid-boolean","symlink-skipped","unsafe-path","too-many-files","too-large","zip-unreadable","zip-too-large","source-missing","source-unsupported","no-skill-found","candidate-missing","name-conflict","replace-target-missing","library-unwritable","manifest-invalid","skill-invalid","not-managed","io-error","no-project","unknown-install","revision-conflict"]},"message":{"type":"string","description":"Human-readable detail in English; the client maps `code` to localized copy."},"path":{"type":"string","description":"Posix-relative path inside the source or install the problem is about, when it is about one file."},"fixable":{"type":"boolean","description":"Whether the review can repair it in the installed copy (name and description proposals)."}},"required":["code","message"],"additionalProperties":true,"description":"Present when `status` is `invalid`: what is wrong with the installed `SKILL.md`."},"schemaVersion":{"type":"number","const":1},"installId":{"type":"string","description":"Directory name under the library; `<name>-<8 hex>`, kept across replacements."},"name":{"type":"string"},"description":{"type":"string"},"whenToUse":{"type":"string"},"installedAt":{"type":"string","description":"ISO time of the first install."},"updatedAt":{"type":"string","description":"ISO time of the latest install or replacement."},"origin":{"type":"object","properties":{"kind":{"type":"string","enum":["directory","zip","markdown"]},"path":{"type":"string","description":"Absolute path of the directory, archive, or Markdown file that was imported."},"entry":{"type":"string","description":"Posix-relative path of the skill entry inside the source (`SKILL.md`, `pack/a/SKILL.md`, or the file name)."}},"required":["kind","path","entry"],"additionalProperties":true},"files":{"type":"number","description":"Regular files copied into the install directory, excluding the manifest."},"bytes":{"type":"number","description":"Bytes of those files."}},"required":["location","status","schemaVersion","installId","name","description","installedAt","updatedAt","origin","files","bytes"],"additionalProperties":true}},"failures":{"type":"array","items":{"type":"object","properties":{"key":{"type":"string"},"issue":{"type":"object","properties":{"code":{"type":"string","enum":["missing-frontmatter","invalid-frontmatter","missing-name","invalid-name","missing-description","legacy-key","invalid-boolean","symlink-skipped","unsafe-path","too-many-files","too-large","zip-unreadable","zip-too-large","source-missing","source-unsupported","no-skill-found","candidate-missing","name-conflict","replace-target-missing","library-unwritable","manifest-invalid","skill-invalid","not-managed","io-error","no-project","unknown-install","revision-conflict"]},"message":{"type":"string","description":"Human-readable detail in English; the client maps `code` to localized copy."},"path":{"type":"string","description":"Posix-relative path inside the source or install the problem is about, when it is about one file."},"fixable":{"type":"boolean","description":"Whether the review can repair it in the installed copy (name and description proposals)."}},"required":["code","message"],"additionalProperties":true}},"required":["key","issue"],"additionalProperties":true}}},"required":["installed","failures"],"additionalProperties":true},
+      },
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/skill-manager/index.ts","line":208,"column":9},
+    },
+    'skillManager/installReferences': {
+      service: 'skillManager',
+      description: 'Projects whose selection references an install, for the uninstall confirmation.',
+      invocation: { kind: 'direct' },
+      parameters: [
+        {
+          name: 'installId',
+          description: 'Directory name under the library.',
+          source: 'json',
+          codec: {
+            mode: 'strict',
+            typeSymbol: '@see-sol-lab/dsh-qol#skillManager/installReferences:installId',
+            create: _deepseek_ai_dsh_workbench_inspector_skillManager_installReferences_parameter_0$schema,
             jsonSchema: {"type":"string"},
           },
           strictCodec: {
             mode: 'strict',
-            typeSymbol: '@deepseek-ai/dsh-session/types#SessionId',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_archiveMemoryState_parameter_0_strict$schema,
+            typeSymbol: '@see-sol-lab/dsh-qol#skillManager/installReferences:installId',
+            create: _deepseek_ai_dsh_workbench_inspector_skillManager_installReferences_parameter_0_strict$schema,
             jsonSchema: {"type":"string"},
           },
         },
@@ -408,12 +564,160 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
       cancellation: { parameter: 'signal' },
       result: {
         mode: 'strict',
-        typeSymbol: '@see-sol-lab/dsh-qol/types#WorkbenchArchiveMemory',
-        create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_archiveMemoryState_result$schema,
-        description: '归档整理事实。',
-        jsonSchema: {"type":"object","properties":{"settings":{"type":"object","properties":{"auto":{"type":"boolean","description":"归档时自动整理（会调用一次当前模型服务，可能计费）。只有 noticeSeen 之后才真的自动跑。"},"noticeSeen":{"type":"boolean","description":"首次说明是否已经看过：没看过之前，归档只记 needs-consent，不调用模型。"}},"required":["auto","noticeSeen"],"additionalProperties":true},"record":{"oneOf":[{"type":"null","const":null},{"type":"object","properties":{"schemaVersion":{"type":"number","const":1},"sessionId":{"type":"string"},"status":{"type":"string","enum":["cancelled","failed","running","invalid","no-project","written","none","needs-consent","too-short","nothing-new","empty","protected","no-model","full","malformed","conflict","interrupted","gone"]},"manual":{"type":"boolean","description":"用户手动发起（不看长度门槛）。"},"processedThroughSeq":{"type":"number","description":"已经处理过的来源边界：这一 seq 及之前的轮次不会再被整理。只在 written / none 时前进。"},"startedAt":{"type":"string"},"finishedAt":{"type":"string"},"input":{"type":"object","properties":{"userTurns":{"type":"number"},"chars":{"type":"number"},"throughSeq":{"type":"number"},"wholeUserTurns":{"type":"number"},"wholeChars":{"type":"number"}},"required":["userTurns","chars","throughSeq","wholeUserTurns","wholeChars"],"additionalProperties":true,"description":"本次新增材料与整段会话的规模（只数人说的话与助手正文）。"},"coverage":{"type":"object","properties":{"fromSeq":{"oneOf":[{"type":"null","const":null},{"type":"number"}]},"throughSeq":{"type":"number"},"complete":{"type":"boolean"},"chars":{"type":"number"}},"required":["fromSeq","throughSeq","complete","chars"],"additionalProperties":true,"description":"实际交给模型的对话范围：太长时只给最近的部分（complete = false）。"},"memoryInput":{"type":"object","properties":{"sha256":{"type":"string"},"chars":{"type":"number"},"complete":{"type":"boolean"},"text":{"type":"string"}},"required":["sha256","chars","complete","text"],"additionalProperties":true,"description":"当时交给模型的项目记忆（Sol P2-08：整理可追溯）：读到的全文摘要与字数，以及实际给模型的那段文本 （有界；超长时只含开头与整个自动整理区）。"},"budgetChars":{"type":"number","description":"本次请求的字符预算（按配置与模型上下文收紧后的值）。"},"cwd":{"type":"string"},"projectPath":{"type":"string"},"route":{"type":"object","properties":{"provider":{"type":"string"},"model":{"type":"string"}},"required":["provider","model"],"additionalProperties":true},"finish":{"type":"string","description":"模型的结束原因（stop / tool-calls / max-tokens …）。"},"output":{"type":"string","description":"模型原样输出（便于复验）。"},"added":{"type":"array","items":{"type":"string"},"description":"写进项目记忆的条目。"},"superseded":{"type":"array","items":{"type":"string"},"description":"被本次条目取代、改成删除线的旧自动条目。"},"pending":{"type":"array","items":{"type":"string"},"description":"没写成（满了、冲突、标记残缺、受保护、写失败）时这次本来要写的条目。"},"suggestions":{"type":"array","items":{"type":"string"},"description":"给全局记忆的建议（另存，等用户确认）。"},"suggestionsDropped":{"type":"number","description":"建议列表已满、没能放进去的条数（不悄悄当成处理完）。"},"rejected":{"type":"number","description":"不合格式、超限或像凭据而被丢掉的行数。"},"error":{"type":"string"}},"required":["schemaVersion","sessionId","status","manual","processedThroughSeq","startedAt"],"additionalProperties":true}]},"running":{"type":"boolean"}},"required":["settings","record","running"],"additionalProperties":true},
+        typeSymbol: '@see-sol-lab/dsh-qol/types#SkillInstallReferences',
+        create: _deepseek_ai_dsh_workbench_inspector_skillManager_installReferences_result$schema,
+        description: 'the referencing projects.',
+        jsonSchema: {"type":"object","properties":{"installId":{"type":"string"},"projects":{"type":"array","items":{"type":"object","properties":{"key":{"type":"string","description":"Project key: sha256 of the canonical folder path (see `SkillProjectView.project`)."},"path":{"type":"string","description":"Canonical project folder as recorded when the selection was saved."}},"required":["key","path"],"additionalProperties":true}}},"required":["installId","projects"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":151,"column":3},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/skill-manager/index.ts","line":237,"column":9},
+    },
+    'skillManager/inventory': {
+      service: 'skillManager',
+      description: 'List installed, orphaned and read-only skills.',
+      invocation: { kind: 'direct' },
+      parameters: [
+      ],
+      cancellation: { parameter: 'signal' },
+      result: {
+        mode: 'strict',
+        typeSymbol: '@see-sol-lab/dsh-qol/types#SkillInventory',
+        create: _deepseek_ai_dsh_workbench_inspector_skillManager_inventory_result$schema,
+        description: 'the inventory.',
+        jsonSchema: {"type":"object","properties":{"libraryDir":{"type":"string","description":"Absolute library directory under the active DSH home."},"installed":{"type":"array","items":{"type":"object","properties":{"location":{"type":"string","description":"Absolute install directory."},"status":{"type":"string","enum":["ok","invalid"]},"issue":{"type":"object","properties":{"code":{"type":"string","enum":["missing-frontmatter","invalid-frontmatter","missing-name","invalid-name","missing-description","legacy-key","invalid-boolean","symlink-skipped","unsafe-path","too-many-files","too-large","zip-unreadable","zip-too-large","source-missing","source-unsupported","no-skill-found","candidate-missing","name-conflict","replace-target-missing","library-unwritable","manifest-invalid","skill-invalid","not-managed","io-error","no-project","unknown-install","revision-conflict"]},"message":{"type":"string","description":"Human-readable detail in English; the client maps `code` to localized copy."},"path":{"type":"string","description":"Posix-relative path inside the source or install the problem is about, when it is about one file."},"fixable":{"type":"boolean","description":"Whether the review can repair it in the installed copy (name and description proposals)."}},"required":["code","message"],"additionalProperties":true,"description":"Present when `status` is `invalid`: what is wrong with the installed `SKILL.md`."},"schemaVersion":{"type":"number","const":1},"installId":{"type":"string","description":"Directory name under the library; `<name>-<8 hex>`, kept across replacements."},"name":{"type":"string"},"description":{"type":"string"},"whenToUse":{"type":"string"},"installedAt":{"type":"string","description":"ISO time of the first install."},"updatedAt":{"type":"string","description":"ISO time of the latest install or replacement."},"origin":{"type":"object","properties":{"kind":{"type":"string","enum":["directory","zip","markdown"]},"path":{"type":"string","description":"Absolute path of the directory, archive, or Markdown file that was imported."},"entry":{"type":"string","description":"Posix-relative path of the skill entry inside the source (`SKILL.md`, `pack/a/SKILL.md`, or the file name)."}},"required":["kind","path","entry"],"additionalProperties":true},"files":{"type":"number","description":"Regular files copied into the install directory, excluding the manifest."},"bytes":{"type":"number","description":"Bytes of those files."}},"required":["location","status","schemaVersion","installId","name","description","installedAt","updatedAt","origin","files","bytes"],"additionalProperties":true}},"orphans":{"type":"array","items":{"type":"string"},"description":"Directory names under the library without a readable manifest; never touched by uninstall."},"readOnly":{"type":"array","items":{"type":"object","properties":{"source":{"type":"string","enum":["user-dsh","user-agents","bundled"]},"name":{"type":"string"},"description":{"type":"string"},"location":{"type":"string","description":"Absolute path of the skill file."}},"required":["source","name","description","location"],"additionalProperties":true}}},"required":["libraryDir","installed","orphans","readOnly"],"additionalProperties":true},
+      },
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/skill-manager/index.ts","line":184,"column":9},
+    },
+    'skillManager/previewImport': {
+      service: 'skillManager',
+      description: 'Review a directory, archive or Markdown file without writing anything.',
+      invocation: { kind: 'direct' },
+      parameters: [
+        {
+          name: 'path',
+          description: 'Absolute source path picked by the user.',
+          source: 'json',
+          codec: {
+            mode: 'strict',
+            typeSymbol: '@see-sol-lab/dsh-qol#skillManager/previewImport:path',
+            create: _deepseek_ai_dsh_workbench_inspector_skillManager_previewImport_parameter_0$schema,
+            jsonSchema: {"type":"string"},
+          },
+          strictCodec: {
+            mode: 'strict',
+            typeSymbol: '@see-sol-lab/dsh-qol#skillManager/previewImport:path',
+            create: _deepseek_ai_dsh_workbench_inspector_skillManager_previewImport_parameter_0_strict$schema,
+            jsonSchema: {"type":"string"},
+          },
+        },
+      ],
+      cancellation: { parameter: 'signal' },
+      result: {
+        mode: 'strict',
+        typeSymbol: '@see-sol-lab/dsh-qol/types#SkillImportPreview',
+        create: _deepseek_ai_dsh_workbench_inspector_skillManager_previewImport_result$schema,
+        description: 'candidates with their issues and proposals, plus source problems.',
+        jsonSchema: {"type":"object","properties":{"source":{"type":"object","properties":{"kind":{"type":"string","enum":["directory","zip","markdown"]},"path":{"type":"string"}},"required":["kind","path"],"additionalProperties":true},"candidates":{"type":"array","items":{"type":"object","properties":{"key":{"type":"string","description":"Identifies the candidate within the preview; passed back in the apply request."},"entry":{"type":"string","description":"Posix-relative path of the entry inside the source."},"kind":{"type":"string","enum":["markdown","skill"]},"name":{"oneOf":[{"type":"null","const":null},{"type":"string"}],"description":"Name declared by the entry's frontmatter; null when missing or invalid."},"description":{"oneOf":[{"type":"null","const":null},{"type":"string"}],"description":"Description declared by the entry's frontmatter; null when missing."},"whenToUse":{"type":"string"},"proposed":{"type":"object","properties":{"name":{"type":"string"},"description":{"type":"string"}},"required":[],"additionalProperties":true,"description":"Proposed values for missing metadata; applied only to the installed copy."},"issues":{"type":"array","items":{"type":"object","properties":{"code":{"type":"string","enum":["missing-frontmatter","invalid-frontmatter","missing-name","invalid-name","missing-description","legacy-key","invalid-boolean","symlink-skipped","unsafe-path","too-many-files","too-large","zip-unreadable","zip-too-large","source-missing","source-unsupported","no-skill-found","candidate-missing","name-conflict","replace-target-missing","library-unwritable","manifest-invalid","skill-invalid","not-managed","io-error","no-project","unknown-install","revision-conflict"]},"message":{"type":"string","description":"Human-readable detail in English; the client maps `code` to localized copy."},"path":{"type":"string","description":"Posix-relative path inside the source or install the problem is about, when it is about one file."},"fixable":{"type":"boolean","description":"Whether the review can repair it in the installed copy (name and description proposals)."}},"required":["code","message"],"additionalProperties":true},"description":"Problems found; blocking ones have `fixable` unset or false."},"files":{"type":"number","description":"Regular files under the candidate's directory, including the entry."},"bytes":{"type":"number"},"replaces":{"oneOf":[{"type":"null","const":null},{"type":"object","properties":{"installId":{"type":"string"},"name":{"type":"string"},"origin":{"type":"object","properties":{"kind":{"type":"string","enum":["directory","zip","markdown"]},"path":{"type":"string","description":"Absolute path of the directory, archive, or Markdown file that was imported."},"entry":{"type":"string","description":"Posix-relative path of the skill entry inside the source (`SKILL.md`, `pack/a/SKILL.md`, or the file name)."}},"required":["kind","path","entry"],"additionalProperties":true},"location":{"type":"string"}},"required":["installId","name","origin","location"],"additionalProperties":true}],"description":"Install the candidate would replace (matched by origin first, then by name), named so the actual target is visible; null when none."},"installable":{"type":"boolean","description":"Whether the candidate can be installed as reviewed (no blocking issue, and a name plus description resolve)."}},"required":["key","entry","kind","name","description","proposed","issues","files","bytes","replaces","installable"],"additionalProperties":true}},"problems":{"type":"array","items":{"type":"object","properties":{"code":{"type":"string","enum":["missing-frontmatter","invalid-frontmatter","missing-name","invalid-name","missing-description","legacy-key","invalid-boolean","symlink-skipped","unsafe-path","too-many-files","too-large","zip-unreadable","zip-too-large","source-missing","source-unsupported","no-skill-found","candidate-missing","name-conflict","replace-target-missing","library-unwritable","manifest-invalid","skill-invalid","not-managed","io-error","no-project","unknown-install","revision-conflict"]},"message":{"type":"string","description":"Human-readable detail in English; the client maps `code` to localized copy."},"path":{"type":"string","description":"Posix-relative path inside the source or install the problem is about, when it is about one file."},"fixable":{"type":"boolean","description":"Whether the review can repair it in the installed copy (name and description proposals)."}},"required":["code","message"],"additionalProperties":true},"description":"Problems with the source itself (unreadable, unsupported, nothing found)."}},"required":["source","candidates","problems"],"additionalProperties":true},
+      },
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/skill-manager/index.ts","line":196,"column":9},
+    },
+    'skillManager/projectView': {
+      service: 'skillManager',
+      description: 'The project page of one session: its folder, the saved selection, and what each tick does in the session\'s real catalog.',
+      invocation: { kind: 'direct' },
+      parameters: [
+        {
+          name: 'sessionId',
+          description: 'Session whose recorded cwd names the project.',
+          source: 'json',
+          codec: {
+            mode: 'strict',
+            typeSymbol: '@deepseek-ai/dsh-session/types#SessionId',
+            create: _deepseek_ai_dsh_workbench_inspector_skillManager_projectView_parameter_0$schema,
+            jsonSchema: {"type":"string"},
+          },
+          strictCodec: {
+            mode: 'strict',
+            typeSymbol: '@deepseek-ai/dsh-session/types#SessionId',
+            create: _deepseek_ai_dsh_workbench_inspector_skillManager_projectView_parameter_0_strict$schema,
+            jsonSchema: {"type":"string"},
+          },
+        },
+      ],
+      cancellation: { parameter: 'signal' },
+      result: {
+        mode: 'strict',
+        typeSymbol: '@see-sol-lab/dsh-qol/types#SkillProjectView',
+        create: _deepseek_ai_dsh_workbench_inspector_skillManager_projectView_result$schema,
+        description: 'the page.',
+        jsonSchema: {"type":"object","properties":{"sessionId":{"type":"string"},"project":{"oneOf":[{"type":"null","const":null},{"type":"object","properties":{"key":{"type":"string","description":"Project key: sha256 of the canonical folder path (see `SkillProjectView.project`)."},"path":{"type":"string","description":"Canonical project folder as recorded when the selection was saved."}},"required":["key","path"],"additionalProperties":true}],"description":"The session's project folder (canonical path and its key); null when the session has none."},"problem":{"type":"string","enum":["no-cwd","missing-folder"],"description":"Why `project` is null or unusable."},"revision":{"type":"number","description":"Revision of the saved selection; 0 before the first save. Sent back with a save."},"entries":{"type":"array","items":{"type":"object","properties":{"installId":{"type":"string"},"name":{"type":"string"},"description":{"type":"string"},"status":{"type":"string","enum":["ok","invalid"]},"issue":{"type":"object","properties":{"code":{"type":"string","enum":["missing-frontmatter","invalid-frontmatter","missing-name","invalid-name","missing-description","legacy-key","invalid-boolean","symlink-skipped","unsafe-path","too-many-files","too-large","zip-unreadable","zip-too-large","source-missing","source-unsupported","no-skill-found","candidate-missing","name-conflict","replace-target-missing","library-unwritable","manifest-invalid","skill-invalid","not-managed","io-error","no-project","unknown-install","revision-conflict"]},"message":{"type":"string","description":"Human-readable detail in English; the client maps `code` to localized copy."},"path":{"type":"string","description":"Posix-relative path inside the source or install the problem is about, when it is about one file."},"fixable":{"type":"boolean","description":"Whether the review can repair it in the installed copy (name and description proposals)."}},"required":["code","message"],"additionalProperties":true,"description":"Present when `status` is `invalid`."},"enabled":{"type":"boolean","description":"Whether the project's saved selection includes this install."},"effect":{"type":"string","enum":["active","missing","inactive","invalid","shadowed"]},"shadowedBy":{"type":"object","properties":{"source":{"type":"string"},"provider":{"type":"string"}},"required":["source","provider"],"additionalProperties":true,"description":"The winning same-name skill's source and provider when `effect` is `shadowed`."}},"required":["installId","name","description","status","enabled","effect"],"additionalProperties":true}},"catalogComplete":{"type":"boolean","description":"Whether the session's real catalog could be read; false means `effect` is a best guess from the selection alone."}},"required":["sessionId","project","revision","entries","catalogComplete"],"additionalProperties":true},
+      },
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/skill-manager/index.ts","line":251,"column":9},
+    },
+    'skillManager/setProjectSelection': {
+      service: 'skillManager',
+      description: 'Save the selection of the session\'s project. The registry catalog is invalidated on success, so open sessions of the folder pick the change up at their next request; already injected skill content stays in their history until a new session.',
+      invocation: { kind: 'direct' },
+      parameters: [
+        {
+          name: 'request',
+          description: 'Session, complete install-id list, and the page\'s revision.',
+          source: 'json',
+          codec: {
+            mode: 'strict',
+            typeSymbol: '@see-sol-lab/dsh-qol/types#SkillProjectSelectionRequest',
+            create: _deepseek_ai_dsh_workbench_inspector_skillManager_setProjectSelection_parameter_0$schema,
+            jsonSchema: {"type":"object","properties":{"sessionId":{"type":"string"},"enabled":{"type":"array","items":{"type":"string"},"description":"The complete list of install ids the project may use."},"revision":{"type":"number","description":"The revision the page was rendered from; a different stored revision refuses the save."}},"required":["sessionId","enabled","revision"],"additionalProperties":true},
+          },
+          strictCodec: {
+            mode: 'strict',
+            typeSymbol: '@see-sol-lab/dsh-qol/types#SkillProjectSelectionRequest',
+            create: _deepseek_ai_dsh_workbench_inspector_skillManager_setProjectSelection_parameter_0_strict$schema,
+            jsonSchema: {"type":"object","properties":{"sessionId":{"type":"string"},"enabled":{"type":"array","items":{"type":"string"},"description":"The complete list of install ids the project may use."},"revision":{"type":"number","description":"The revision the page was rendered from; a different stored revision refuses the save."}},"required":["sessionId","enabled","revision"],"additionalProperties":false},
+          },
+        },
+      ],
+      cancellation: { parameter: 'signal' },
+      result: {
+        mode: 'strict',
+        typeSymbol: '@see-sol-lab/dsh-qol/types#SkillProjectSelectionOutcome',
+        create: _deepseek_ai_dsh_workbench_inspector_skillManager_setProjectSelection_result$schema,
+        description: 'whether it saved, and the page as it reads afterwards.',
+        jsonSchema: {"type":"object","properties":{"saved":{"type":"boolean"},"issue":{"type":"object","properties":{"code":{"type":"string","enum":["missing-frontmatter","invalid-frontmatter","missing-name","invalid-name","missing-description","legacy-key","invalid-boolean","symlink-skipped","unsafe-path","too-many-files","too-large","zip-unreadable","zip-too-large","source-missing","source-unsupported","no-skill-found","candidate-missing","name-conflict","replace-target-missing","library-unwritable","manifest-invalid","skill-invalid","not-managed","io-error","no-project","unknown-install","revision-conflict"]},"message":{"type":"string","description":"Human-readable detail in English; the client maps `code` to localized copy."},"path":{"type":"string","description":"Posix-relative path inside the source or install the problem is about, when it is about one file."},"fixable":{"type":"boolean","description":"Whether the review can repair it in the installed copy (name and description proposals)."}},"required":["code","message"],"additionalProperties":true,"description":"Present when `saved` is false."},"view":{"type":"object","properties":{"sessionId":{"type":"string"},"project":{"oneOf":[{"type":"null","const":null},{"type":"object","properties":{"key":{"type":"string","description":"Project key: sha256 of the canonical folder path (see `SkillProjectView.project`)."},"path":{"type":"string","description":"Canonical project folder as recorded when the selection was saved."}},"required":["key","path"],"additionalProperties":true}],"description":"The session's project folder (canonical path and its key); null when the session has none."},"problem":{"type":"string","enum":["no-cwd","missing-folder"],"description":"Why `project` is null or unusable."},"revision":{"type":"number","description":"Revision of the saved selection; 0 before the first save. Sent back with a save."},"entries":{"type":"array","items":{"type":"object","properties":{"installId":{"type":"string"},"name":{"type":"string"},"description":{"type":"string"},"status":{"type":"string","enum":["ok","invalid"]},"issue":{"type":"object","properties":{"code":{"type":"string","enum":["missing-frontmatter","invalid-frontmatter","missing-name","invalid-name","missing-description","legacy-key","invalid-boolean","symlink-skipped","unsafe-path","too-many-files","too-large","zip-unreadable","zip-too-large","source-missing","source-unsupported","no-skill-found","candidate-missing","name-conflict","replace-target-missing","library-unwritable","manifest-invalid","skill-invalid","not-managed","io-error","no-project","unknown-install","revision-conflict"]},"message":{"type":"string","description":"Human-readable detail in English; the client maps `code` to localized copy."},"path":{"type":"string","description":"Posix-relative path inside the source or install the problem is about, when it is about one file."},"fixable":{"type":"boolean","description":"Whether the review can repair it in the installed copy (name and description proposals)."}},"required":["code","message"],"additionalProperties":true,"description":"Present when `status` is `invalid`."},"enabled":{"type":"boolean","description":"Whether the project's saved selection includes this install."},"effect":{"type":"string","enum":["active","missing","inactive","invalid","shadowed"]},"shadowedBy":{"type":"object","properties":{"source":{"type":"string"},"provider":{"type":"string"}},"required":["source","provider"],"additionalProperties":true,"description":"The winning same-name skill's source and provider when `effect` is `shadowed`."}},"required":["installId","name","description","status","enabled","effect"],"additionalProperties":true}},"catalogComplete":{"type":"boolean","description":"Whether the session's real catalog could be read; false means `effect` is a best guess from the selection alone."}},"required":["sessionId","project","revision","entries","catalogComplete"],"additionalProperties":true,"description":"The page as it reads after the attempt (fresh on conflict, so the person sees what won)."}},"required":["saved","view"],"additionalProperties":true},
+      },
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/skill-manager/index.ts","line":268,"column":9},
+    },
+    'skillManager/uninstall': {
+      service: 'skillManager',
+      description: 'Remove one managed install. Project selections that name it keep the reference as missing; the outcome lists those projects.',
+      invocation: { kind: 'direct' },
+      parameters: [
+        {
+          name: 'installId',
+          description: 'Directory name under the library.',
+          source: 'json',
+          codec: {
+            mode: 'strict',
+            typeSymbol: '@see-sol-lab/dsh-qol#skillManager/uninstall:installId',
+            create: _deepseek_ai_dsh_workbench_inspector_skillManager_uninstall_parameter_0$schema,
+            jsonSchema: {"type":"string"},
+          },
+          strictCodec: {
+            mode: 'strict',
+            typeSymbol: '@see-sol-lab/dsh-qol#skillManager/uninstall:installId',
+            create: _deepseek_ai_dsh_workbench_inspector_skillManager_uninstall_parameter_0_strict$schema,
+            jsonSchema: {"type":"string"},
+          },
+        },
+      ],
+      cancellation: { parameter: 'signal' },
+      result: {
+        mode: 'strict',
+        typeSymbol: '@see-sol-lab/dsh-qol/types#SkillUninstallOutcome',
+        create: _deepseek_ai_dsh_workbench_inspector_skillManager_uninstall_result$schema,
+        description: 'the outcome; refusals carry an issue and remove nothing.',
+        jsonSchema: {"type":"object","properties":{"installId":{"type":"string"},"location":{"type":"string","description":"Absolute directory that was (or would have been) removed."},"removed":{"type":"boolean"},"issue":{"type":"object","properties":{"code":{"type":"string","enum":["missing-frontmatter","invalid-frontmatter","missing-name","invalid-name","missing-description","legacy-key","invalid-boolean","symlink-skipped","unsafe-path","too-many-files","too-large","zip-unreadable","zip-too-large","source-missing","source-unsupported","no-skill-found","candidate-missing","name-conflict","replace-target-missing","library-unwritable","manifest-invalid","skill-invalid","not-managed","io-error","no-project","unknown-install","revision-conflict"]},"message":{"type":"string","description":"Human-readable detail in English; the client maps `code` to localized copy."},"path":{"type":"string","description":"Posix-relative path inside the source or install the problem is about, when it is about one file."},"fixable":{"type":"boolean","description":"Whether the review can repair it in the installed copy (name and description proposals)."}},"required":["code","message"],"additionalProperties":true,"description":"Present when `removed` is false."},"affected":{"type":"array","items":{"type":"object","properties":{"key":{"type":"string","description":"Project key: sha256 of the canonical folder path (see `SkillProjectView.project`)."},"path":{"type":"string","description":"Canonical project folder as recorded when the selection was saved."}},"required":["key","path"],"additionalProperties":true},"description":"Projects whose selection still names this install. The references stay in place as missing entries — nothing switches to another skill of the same name — until each project clears them."}},"required":["installId","location","removed","affected"],"additionalProperties":true},
+      },
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/skill-manager/index.ts","line":221,"column":9},
     },
     'workbenchInspector/cleanSandboxMarks': {
       service: 'workbenchInspector',
@@ -446,7 +750,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         description: 'what was done, and on which folder.',
         jsonSchema: {"type":"object","properties":{"status":{"type":"string","enum":["cleaned","clean","busy","unsupported"]},"root":{"type":"string","description":"The folder the marks were on: the chosen one, or the ancestor they are inherited from."}},"required":["status","root"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":261,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":132,"column":9},
     },
     'workbenchInspector/createProjectAgents': {
       service: 'workbenchInspector',
@@ -496,7 +800,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         description: 'whether the file was created or already existed.',
         jsonSchema: {"type":"string","enum":["created","exists"]},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":421,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":292,"column":9},
     },
     'workbenchInspector/deleteSession': {
       service: 'workbenchInspector',
@@ -545,7 +849,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         description: 'Completion of content deletion and its client announcement.',
         jsonSchemaError: 'typert tool schema: unsupported void value',
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":542,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":413,"column":9},
     },
     'workbenchInspector/diff': {
       service: 'workbenchInspector',
@@ -612,7 +916,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         description: 'the bounded provider diff; truncation is never silent.',
         jsonSchema: {"type":"object","properties":{"files":{"type":"array","items":{"type":"object","properties":{"path":{"type":"string","description":"Path relative to the repo root."},"origPath":{"type":"string","description":"Original path for a rename/copy."},"status":{"type":"string","enum":["deleted","added","modified","renamed","copied","typechange"],"description":"Letter status from the name-status vocabulary (A/M/D/R/C/T)."},"binary":{"type":"boolean","description":"True when Git reports a binary file (`-` numstat columns)."},"addedLines":{"type":"number","description":"Added lines; absent for binary files."},"deletedLines":{"type":"number","description":"Deleted lines; absent for binary files."},"score":{"type":"number","description":"Rename/copy similarity score (`100`), when present."}},"required":["path","status","binary"],"additionalProperties":true},"description":"Every changed file in record order."},"patch":{"type":"string","description":"The requested unified patch, when `wantPatch` was set and the bound held."}},"required":["files"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":458,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":329,"column":9},
     },
     'workbenchInspector/exportMarkdown': {
       service: 'workbenchInspector',
@@ -679,7 +983,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         description: 'the display title and the rendered document.',
         jsonSchema: {"type":"object","properties":{"title":{"type":"string","description":"The Session's current display title, already resolved."},"markdown":{"type":"string","description":"The complete document; the desktop writes it UTF-8 without BOM."}},"required":["title","markdown"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":507,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":378,"column":9},
     },
     'workbenchInspector/globalMemory': {
       service: 'workbenchInspector',
@@ -695,7 +999,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         description: 'the home and its text (\'\' when absent, null when unreadable or too large).',
         jsonSchema: {"type":"object","properties":{"home":{"type":"string","description":"生效的 DSH home。"},"text":{"oneOf":[{"type":"null","const":null},{"type":"string"}],"description":"全文；读不到或太大时为 null。"}},"required":["home","text"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":371,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":242,"column":9},
     },
     'workbenchInspector/lastReply': {
       service: 'workbenchInspector',
@@ -728,7 +1032,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         description: 'the reply text (text blocks joined) and its completeness.',
         jsonSchema: {"type":"object","properties":{"text":{"oneOf":[{"type":"null","const":null},{"type":"string"}],"description":"Plain text of the newest assistant message (text blocks joined); null before the first reply."},"complete":{"type":"boolean","description":"Whether a `turn/end` follows that message, i.e. the reply is complete."}},"required":["text","complete"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":477,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":348,"column":9},
     },
     'workbenchInspector/memory': {
       service: 'workbenchInspector',
@@ -761,7 +1065,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         description: 'the cwd, the memory file name, its text or null, and the AGENTS.md presence.',
         jsonSchema: {"type":"object","properties":{"cwd":{"type":"string","description":"Session working directory."},"fileName":{"type":"string","description":"`<folder>.memory.md`, from {@link projectMemoryFileName}."},"text":{"oneOf":[{"type":"null","const":null},{"type":"string"}],"description":"Memory text; null when the file does not exist yet."},"agents":{"type":"boolean","description":"Whether `AGENTS.md` exists in the working directory."}},"required":["cwd","fileName","text","agents"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":352,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":223,"column":9},
     },
     'workbenchInspector/memoryInjection': {
       service: 'workbenchInspector',
@@ -792,25 +1096,9 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         typeSymbol: '@see-sol-lab/dsh-qol#workbenchInspector/memoryInjection:result',
         create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_memoryInjection_result$schema,
         description: '带入事实，或 null。',
-        jsonSchema: {"oneOf":[{"type":"null","const":null},{"type":"object","properties":{"sessionId":{"type":"string"},"entries":{"type":"array","items":{"type":"object","properties":{"at":{"type":"string"},"capBytes":{"type":"number","description":"每个文件的读取上限（字节）。"},"global":{"type":"object","properties":{"path":{"type":"string"},"status":{"type":"string","enum":["absent","empty","present","truncated","unreadable"]},"bytes":{"type":"number","description":"实际带入的 UTF-8 字节数与字符数（code points）。"},"chars":{"type":"number"},"sha256":{"type":"string","description":"实际带入文本的 SHA-256：同样长度、不同内容也分得开。"},"autoArea":{"type":"string","enum":["absent","included"],"description":"自动整理区是否整段带入（项目记忆超出上限时，它优先于人写内容的尾部）。"}},"required":["path","status","bytes","chars","sha256"],"additionalProperties":true},"project":{"type":"object","properties":{"path":{"type":"string"},"status":{"type":"string","enum":["absent","empty","present","truncated","unreadable"]},"bytes":{"type":"number","description":"实际带入的 UTF-8 字节数与字符数（code points）。"},"chars":{"type":"number"},"sha256":{"type":"string","description":"实际带入文本的 SHA-256：同样长度、不同内容也分得开。"},"autoArea":{"type":"string","enum":["absent","included"],"description":"自动整理区是否整段带入（项目记忆超出上限时，它优先于人写内容的尾部）。"}},"required":["path","status","bytes","chars","sha256"],"additionalProperties":true}},"required":["at","capBytes","global","project"],"additionalProperties":true}}},"required":["sessionId","entries"],"additionalProperties":true}]},
+        jsonSchema: {"oneOf":[{"type":"null","const":null},{"type":"object","properties":{"sessionId":{"type":"string"},"entries":{"type":"array","items":{"type":"object","properties":{"at":{"type":"string"},"capBytes":{"type":"number","description":"每个文件的读取上限（字节）。"},"global":{"type":"object","properties":{"path":{"type":"string"},"status":{"type":"string","enum":["absent","present","empty","truncated","unreadable"]},"bytes":{"type":"number","description":"实际带入的 UTF-8 字节数与字符数（code points）。"},"chars":{"type":"number"},"sha256":{"type":"string","description":"实际带入文本的 SHA-256：同样长度、不同内容也分得开。"},"autoArea":{"type":"string","enum":["absent","included"],"description":"自动整理区是否整段带入（项目记忆超出上限时，它优先于人写内容的尾部）。"}},"required":["path","status","bytes","chars","sha256"],"additionalProperties":true},"project":{"type":"object","properties":{"path":{"type":"string"},"status":{"type":"string","enum":["absent","present","empty","truncated","unreadable"]},"bytes":{"type":"number","description":"实际带入的 UTF-8 字节数与字符数（code points）。"},"chars":{"type":"number"},"sha256":{"type":"string","description":"实际带入文本的 SHA-256：同样长度、不同内容也分得开。"},"autoArea":{"type":"string","enum":["absent","included"],"description":"自动整理区是否整段带入（项目记忆超出上限时，它优先于人写内容的尾部）。"}},"required":["path","status","bytes","chars","sha256"],"additionalProperties":true}},"required":["at","capBytes","global","project"],"additionalProperties":true}}},"required":["sessionId","entries"],"additionalProperties":true}]},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":225,"column":3},
-    },
-    'workbenchInspector/memorySuggestions': {
-      service: 'workbenchInspector',
-      description: '等用户确认的全局记忆建议（来自归档整理）。',
-      invocation: { kind: 'direct' },
-      parameters: [
-      ],
-      cancellation: { parameter: 'signal' },
-      result: {
-        mode: 'strict',
-        typeSymbol: '@see-sol-lab/dsh-qol#workbenchInspector/memorySuggestions:result',
-        create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_memorySuggestions_result$schema,
-        description: '建议列表。',
-        jsonSchema: {"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"text":{"type":"string"},"sessionId":{"type":"string"},"at":{"type":"string"}},"required":["id","text","sessionId","at"],"additionalProperties":true}},
-      },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":197,"column":3},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":96,"column":3},
     },
     'workbenchInspector/overview': {
       service: 'workbenchInspector',
@@ -841,42 +1129,9 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         typeSymbol: '@see-sol-lab/dsh-qol/types#WorkbenchOverview',
         create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_overview_result$schema,
         description: 'the read-only repository overview.',
-        jsonSchema: {"type":"object","properties":{"root":{"type":"string"},"status":{"type":"object","properties":{"clean":{"type":"boolean","description":"True when the work tree matches HEAD and the index (no entries at all)."},"head":{"type":"object","properties":{"kind":{"type":"string","enum":["branch","detached","unborn"]},"name":{"type":"string"},"oid":{"type":"string"}},"required":["kind","name"],"additionalProperties":true,"description":"HEAD fact from the `# branch.*` headers."},"upstream":{"type":"object","properties":{"ref":{"type":"string"},"ahead":{"type":"number"},"behind":{"type":"number"}},"required":["ref","ahead","behind"],"additionalProperties":true,"description":"Upstream ref plus ahead/behind from `# branch.upstream` / `# branch.ab`."},"entries":{"type":"array","items":{"type":"object","properties":{"kind":{"type":"string","enum":["conflict","staged","unstaged","untracked"],"description":"Which surface reports the change: `conflict` for unmerged records (`u`), `untracked` for `?` records, `staged` when the index column differs from `.`, `unstaged` when only the work-tree column differs."},"path":{"type":"string","description":"Path relative to the repo root."},"origPath":{"type":"string","description":"Original path for a rename/copy (the `2` record's second path)."},"x":{"type":"string","enum":[".","A","M","D","R","C","U","T","?","AM","AD","AU","AA","DD","DU","UA","UD","UU"],"description":"Index status column (`X` of `XY`)."},"y":{"type":"string","enum":[".","A","M","D","R","C","U","T","?","AM","AD","AU","AA","DD","DU","UA","UD","UU"],"description":"Work-tree status column (`Y` of `XY`)."},"score":{"type":"string","description":"Rename/copy similarity score (`R100` / `C75`), when present."}},"required":["kind","path","x","y"],"additionalProperties":true},"description":"Every changed path, in porcelain v2 record order."}},"required":["clean","head","entries"],"additionalProperties":true},"remotes":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string","description":"Remote name as configured (`origin`)."},"fetchUrl":{"type":"string","description":"The URL git fetches from."},"pushUrl":{"type":"string","description":"The URL git pushes to, when it differs from the fetch URL."}},"required":["name","fetchUrl"],"additionalProperties":true}},"commits":{"type":"array","items":{"type":"object","properties":{"sha":{"type":"string","description":"Full commit SHA."},"subject":{"type":"string","description":"First line of the commit message."},"author":{"type":"string","description":"Author name as recorded."},"time":{"type":"number","description":"Committer timestamp in Unix milliseconds."}},"required":["sha","subject","author","time"],"additionalProperties":true}},"worktrees":{"type":"array","items":{"type":"object","properties":{"statusError":{"type":"string","description":"A failed status read is unknown, not a clean work tree."},"current":{"type":"boolean","description":"True when the Session's repository root is this work tree."},"changedPaths":{"type":"array","items":{"type":"string"},"description":"Repository-relative paths changed in that work tree (staged, unstaged, untracked, conflict); empty when clean, unreadable, or bare."},"path":{"type":"string","description":"Absolute work-tree path."},"head":{"type":"string","description":"HEAD oid of that work tree."},"branch":{"type":"string","description":"Branch checked out there, when not detached."},"detached":{"type":"boolean","description":"True when the work tree is detached or unborn."},"bare":{"type":"boolean","description":"True for the bare repository itself."}},"required":["current","changedPaths","path","head","detached","bare"],"additionalProperties":true}}},"required":["root","status","remotes","commits","worktrees"],"additionalProperties":true},
+        jsonSchema: {"type":"object","properties":{"root":{"type":"string"},"status":{"type":"object","properties":{"clean":{"type":"boolean","description":"True when the work tree matches HEAD and the index (no entries at all)."},"head":{"type":"object","properties":{"kind":{"type":"string","enum":["branch","detached","unborn"]},"name":{"type":"string"},"oid":{"type":"string"}},"required":["kind","name"],"additionalProperties":true,"description":"HEAD fact from the `# branch.*` headers."},"upstream":{"type":"object","properties":{"ref":{"type":"string"},"ahead":{"type":"number"},"behind":{"type":"number"}},"required":["ref","ahead","behind"],"additionalProperties":true,"description":"Upstream ref plus ahead/behind from `# branch.upstream` / `# branch.ab`."},"entries":{"type":"array","items":{"type":"object","properties":{"kind":{"type":"string","enum":["staged","unstaged","untracked","conflict"],"description":"Which surface reports the change: `conflict` for unmerged records (`u`), `untracked` for `?` records, `staged` when the index column differs from `.`, `unstaged` when only the work-tree column differs."},"path":{"type":"string","description":"Path relative to the repo root."},"origPath":{"type":"string","description":"Original path for a rename/copy (the `2` record's second path)."},"x":{"type":"string","enum":[".","A","M","D","R","C","U","T","?","AM","AD","AU","AA","DD","DU","UA","UD","UU"],"description":"Index status column (`X` of `XY`)."},"y":{"type":"string","enum":[".","A","M","D","R","C","U","T","?","AM","AD","AU","AA","DD","DU","UA","UD","UU"],"description":"Work-tree status column (`Y` of `XY`)."},"score":{"type":"string","description":"Rename/copy similarity score (`R100` / `C75`), when present."}},"required":["kind","path","x","y"],"additionalProperties":true},"description":"Every changed path, in porcelain v2 record order."}},"required":["clean","head","entries"],"additionalProperties":true},"remotes":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string","description":"Remote name as configured (`origin`)."},"fetchUrl":{"type":"string","description":"The URL git fetches from."},"pushUrl":{"type":"string","description":"The URL git pushes to, when it differs from the fetch URL."}},"required":["name","fetchUrl"],"additionalProperties":true}},"commits":{"type":"array","items":{"type":"object","properties":{"sha":{"type":"string","description":"Full commit SHA."},"subject":{"type":"string","description":"First line of the commit message."},"author":{"type":"string","description":"Author name as recorded."},"time":{"type":"number","description":"Committer timestamp in Unix milliseconds."}},"required":["sha","subject","author","time"],"additionalProperties":true}},"worktrees":{"type":"array","items":{"type":"object","properties":{"statusError":{"type":"string","description":"A failed status read is unknown, not a clean work tree."},"current":{"type":"boolean","description":"True when the Session's repository root is this work tree."},"changedPaths":{"type":"array","items":{"type":"string"},"description":"Repository-relative paths changed in that work tree (staged, unstaged, untracked, conflict); empty when clean, unreadable, or bare."},"path":{"type":"string","description":"Absolute work-tree path."},"head":{"type":"string","description":"HEAD oid of that work tree."},"branch":{"type":"string","description":"Branch checked out there, when not detached."},"detached":{"type":"boolean","description":"True when the work tree is detached or unborn."},"bare":{"type":"boolean","description":"True for the bare repository itself."}},"required":["current","changedPaths","path","head","detached","bare"],"additionalProperties":true}}},"required":["root","status","remotes","commits","worktrees"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":559,"column":9},
-    },
-    'workbenchInspector/resolveMemorySuggestion': {
-      service: 'workbenchInspector',
-      description: '从列表里拿掉一条建议：用户已经把它加进全局记忆（由桌面的全局记忆保存命令写入），或者忽略了它。 建议文件只由本进程读写。',
-      invocation: { kind: 'direct' },
-      parameters: [
-        {
-          name: 'id',
-          description: '建议 id。',
-          source: 'json',
-          codec: {
-            mode: 'strict',
-            typeSymbol: '@see-sol-lab/dsh-qol#workbenchInspector/resolveMemorySuggestion:id',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_resolveMemorySuggestion_parameter_0$schema,
-            jsonSchema: {"type":"string"},
-          },
-          strictCodec: {
-            mode: 'strict',
-            typeSymbol: '@see-sol-lab/dsh-qol#workbenchInspector/resolveMemorySuggestion:id',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_resolveMemorySuggestion_parameter_0_strict$schema,
-            jsonSchema: {"type":"string"},
-          },
-        },
-      ],
-      cancellation: { parameter: 'signal' },
-      result: {
-        mode: 'strict',
-        typeSymbol: '@see-sol-lab/dsh-qol#workbenchInspector/resolveMemorySuggestion:result',
-        create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_resolveMemorySuggestion_result$schema,
-        description: '是否找到并拿掉了。',
-        jsonSchema: {"type":"boolean"},
-      },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":212,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":430,"column":9},
     },
     'workbenchInspector/saveGlobalMemory': {
       service: 'workbenchInspector',
@@ -926,7 +1181,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         description: 'completion after the atomic write.',
         jsonSchemaError: 'typert tool schema: unsupported void value',
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":385,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":256,"column":9},
     },
     'workbenchInspector/saveProjectMemory': {
       service: 'workbenchInspector',
@@ -993,57 +1248,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         description: 'completion after the atomic write.',
         jsonSchemaError: 'typert tool schema: unsupported void value',
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":404,"column":9},
-    },
-    'workbenchInspector/setArchiveMemorySettings': {
-      service: 'workbenchInspector',
-      description: '改归档整理的开关或标记首次说明已读。',
-      invocation: { kind: 'direct' },
-      parameters: [
-        {
-          name: 'auto',
-          description: '归档时自动整理；null = 不改。',
-          source: 'json',
-          codec: {
-            mode: 'strict',
-            typeSymbol: '@see-sol-lab/dsh-qol#workbenchInspector/setArchiveMemorySettings:auto',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_0$schema,
-            jsonSchema: {"oneOf":[{"type":"null","const":null},{"type":"boolean","enum":[false,true]}]},
-          },
-          strictCodec: {
-            mode: 'strict',
-            typeSymbol: '@see-sol-lab/dsh-qol#workbenchInspector/setArchiveMemorySettings:auto',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_0_strict$schema,
-            jsonSchema: {"oneOf":[{"type":"null","const":null},{"type":"boolean","enum":[false,true]}]},
-          },
-        },
-        {
-          name: 'noticeSeen',
-          description: '首次说明已读；null = 不改。',
-          source: 'json',
-          codec: {
-            mode: 'strict',
-            typeSymbol: '@see-sol-lab/dsh-qol#workbenchInspector/setArchiveMemorySettings:noticeSeen',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_1$schema,
-            jsonSchema: {"oneOf":[{"type":"null","const":null},{"type":"boolean","enum":[false,true]}]},
-          },
-          strictCodec: {
-            mode: 'strict',
-            typeSymbol: '@see-sol-lab/dsh-qol#workbenchInspector/setArchiveMemorySettings:noticeSeen',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_parameter_1_strict$schema,
-            jsonSchema: {"oneOf":[{"type":"null","const":null},{"type":"boolean","enum":[false,true]}]},
-          },
-        },
-      ],
-      cancellation: { parameter: 'signal' },
-      result: {
-        mode: 'strict',
-        typeSymbol: '@see-sol-lab/dsh-qol#workbenchInspector/setArchiveMemorySettings:result',
-        create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_setArchiveMemorySettings_result$schema,
-        description: '改后的设置。',
-        jsonSchema: {"type":"object","properties":{"auto":{"type":"boolean","description":"归档时自动整理（会调用一次当前模型服务，可能计费）。只有 noticeSeen 之后才真的自动跑。"},"noticeSeen":{"type":"boolean","description":"首次说明是否已经看过：没看过之前，归档只记 needs-consent，不调用模型。"}},"required":["auto","noticeSeen"],"additionalProperties":true},
-      },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":184,"column":3},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":275,"column":9},
     },
     'workbenchInspector/status': {
       service: 'workbenchInspector',
@@ -1074,42 +1279,9 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         typeSymbol: '@see-sol-lab/dsh-qol/types#WorkbenchRepository',
         create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_status_result$schema,
         description: 'canonical Git status and root.',
-        jsonSchema: {"type":"object","properties":{"root":{"type":"string"},"status":{"type":"object","properties":{"clean":{"type":"boolean","description":"True when the work tree matches HEAD and the index (no entries at all)."},"head":{"type":"object","properties":{"kind":{"type":"string","enum":["branch","detached","unborn"]},"name":{"type":"string"},"oid":{"type":"string"}},"required":["kind","name"],"additionalProperties":true,"description":"HEAD fact from the `# branch.*` headers."},"upstream":{"type":"object","properties":{"ref":{"type":"string"},"ahead":{"type":"number"},"behind":{"type":"number"}},"required":["ref","ahead","behind"],"additionalProperties":true,"description":"Upstream ref plus ahead/behind from `# branch.upstream` / `# branch.ab`."},"entries":{"type":"array","items":{"type":"object","properties":{"kind":{"type":"string","enum":["conflict","staged","unstaged","untracked"],"description":"Which surface reports the change: `conflict` for unmerged records (`u`), `untracked` for `?` records, `staged` when the index column differs from `.`, `unstaged` when only the work-tree column differs."},"path":{"type":"string","description":"Path relative to the repo root."},"origPath":{"type":"string","description":"Original path for a rename/copy (the `2` record's second path)."},"x":{"type":"string","enum":[".","A","M","D","R","C","U","T","?","AM","AD","AU","AA","DD","DU","UA","UD","UU"],"description":"Index status column (`X` of `XY`)."},"y":{"type":"string","enum":[".","A","M","D","R","C","U","T","?","AM","AD","AU","AA","DD","DU","UA","UD","UU"],"description":"Work-tree status column (`Y` of `XY`)."},"score":{"type":"string","description":"Rename/copy similarity score (`R100` / `C75`), when present."}},"required":["kind","path","x","y"],"additionalProperties":true},"description":"Every changed path, in porcelain v2 record order."}},"required":["clean","head","entries"],"additionalProperties":true}},"required":["root","status"],"additionalProperties":true},
+        jsonSchema: {"type":"object","properties":{"root":{"type":"string"},"status":{"type":"object","properties":{"clean":{"type":"boolean","description":"True when the work tree matches HEAD and the index (no entries at all)."},"head":{"type":"object","properties":{"kind":{"type":"string","enum":["branch","detached","unborn"]},"name":{"type":"string"},"oid":{"type":"string"}},"required":["kind","name"],"additionalProperties":true,"description":"HEAD fact from the `# branch.*` headers."},"upstream":{"type":"object","properties":{"ref":{"type":"string"},"ahead":{"type":"number"},"behind":{"type":"number"}},"required":["ref","ahead","behind"],"additionalProperties":true,"description":"Upstream ref plus ahead/behind from `# branch.upstream` / `# branch.ab`."},"entries":{"type":"array","items":{"type":"object","properties":{"kind":{"type":"string","enum":["staged","unstaged","untracked","conflict"],"description":"Which surface reports the change: `conflict` for unmerged records (`u`), `untracked` for `?` records, `staged` when the index column differs from `.`, `unstaged` when only the work-tree column differs."},"path":{"type":"string","description":"Path relative to the repo root."},"origPath":{"type":"string","description":"Original path for a rename/copy (the `2` record's second path)."},"x":{"type":"string","enum":[".","A","M","D","R","C","U","T","?","AM","AD","AU","AA","DD","DU","UA","UD","UU"],"description":"Index status column (`X` of `XY`)."},"y":{"type":"string","enum":[".","A","M","D","R","C","U","T","?","AM","AD","AU","AA","DD","DU","UA","UD","UU"],"description":"Work-tree status column (`Y` of `XY`)."},"score":{"type":"string","description":"Rename/copy similarity score (`R100` / `C75`), when present."}},"required":["kind","path","x","y"],"additionalProperties":true},"description":"Every changed path, in porcelain v2 record order."}},"required":["clean","head","entries"],"additionalProperties":true}},"required":["root","status"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":441,"column":9},
-    },
-    'workbenchInspector/summarizeSession': {
-      service: 'workbenchInspector',
-      description: '手动整理一段会话（不看长度门槛）：短会话、上次失败、整理区清理之后都从这里再来一次。 对仍在使用的会话也可以：只读、不带工具，不改会话本身。请求被取消（页面关闭）就停掉这一次。',
-      invocation: { kind: 'direct' },
-      parameters: [
-        {
-          name: 'sessionId',
-          description: '会话。',
-          source: 'json',
-          codec: {
-            mode: 'strict',
-            typeSymbol: '@deepseek-ai/dsh-session/types#SessionId',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_summarizeSession_parameter_0$schema,
-            jsonSchema: {"type":"string"},
-          },
-          strictCodec: {
-            mode: 'strict',
-            typeSymbol: '@deepseek-ai/dsh-session/types#SessionId',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_summarizeSession_parameter_0_strict$schema,
-            jsonSchema: {"type":"string"},
-          },
-        },
-      ],
-      cancellation: { parameter: 'signal' },
-      result: {
-        mode: 'strict',
-        typeSymbol: '@see-sol-lab/dsh-qol/types#ArchiveMemoryRecord',
-        create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_summarizeSession_result$schema,
-        description: '本次的记录。',
-        jsonSchema: {"type":"object","properties":{"schemaVersion":{"type":"number","const":1},"sessionId":{"type":"string"},"status":{"type":"string","enum":["cancelled","failed","running","invalid","no-project","written","none","needs-consent","too-short","nothing-new","empty","protected","no-model","full","malformed","conflict","interrupted","gone"]},"manual":{"type":"boolean","description":"用户手动发起（不看长度门槛）。"},"processedThroughSeq":{"type":"number","description":"已经处理过的来源边界：这一 seq 及之前的轮次不会再被整理。只在 written / none 时前进。"},"startedAt":{"type":"string"},"finishedAt":{"type":"string"},"input":{"type":"object","properties":{"userTurns":{"type":"number"},"chars":{"type":"number"},"throughSeq":{"type":"number"},"wholeUserTurns":{"type":"number"},"wholeChars":{"type":"number"}},"required":["userTurns","chars","throughSeq","wholeUserTurns","wholeChars"],"additionalProperties":true,"description":"本次新增材料与整段会话的规模（只数人说的话与助手正文）。"},"coverage":{"type":"object","properties":{"fromSeq":{"oneOf":[{"type":"null","const":null},{"type":"number"}]},"throughSeq":{"type":"number"},"complete":{"type":"boolean"},"chars":{"type":"number"}},"required":["fromSeq","throughSeq","complete","chars"],"additionalProperties":true,"description":"实际交给模型的对话范围：太长时只给最近的部分（complete = false）。"},"memoryInput":{"type":"object","properties":{"sha256":{"type":"string"},"chars":{"type":"number"},"complete":{"type":"boolean"},"text":{"type":"string"}},"required":["sha256","chars","complete","text"],"additionalProperties":true,"description":"当时交给模型的项目记忆（Sol P2-08：整理可追溯）：读到的全文摘要与字数，以及实际给模型的那段文本 （有界；超长时只含开头与整个自动整理区）。"},"budgetChars":{"type":"number","description":"本次请求的字符预算（按配置与模型上下文收紧后的值）。"},"cwd":{"type":"string"},"projectPath":{"type":"string"},"route":{"type":"object","properties":{"provider":{"type":"string"},"model":{"type":"string"}},"required":["provider","model"],"additionalProperties":true},"finish":{"type":"string","description":"模型的结束原因（stop / tool-calls / max-tokens …）。"},"output":{"type":"string","description":"模型原样输出（便于复验）。"},"added":{"type":"array","items":{"type":"string"},"description":"写进项目记忆的条目。"},"superseded":{"type":"array","items":{"type":"string"},"description":"被本次条目取代、改成删除线的旧自动条目。"},"pending":{"type":"array","items":{"type":"string"},"description":"没写成（满了、冲突、标记残缺、受保护、写失败）时这次本来要写的条目。"},"suggestions":{"type":"array","items":{"type":"string"},"description":"给全局记忆的建议（另存，等用户确认）。"},"suggestionsDropped":{"type":"number","description":"建议列表已满、没能放进去的条数（不悄悄当成处理完）。"},"rejected":{"type":"number","description":"不合格式、超限或像凭据而被丢掉的行数。"},"error":{"type":"string"}},"required":["schemaVersion","sessionId","status","manual","processedThroughSeq","startedAt"],"additionalProperties":true},
-      },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":171,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":312,"column":9},
     },
     'workbenchInspector/text': {
       service: 'workbenchInspector',
@@ -1176,7 +1348,7 @@ export const TYPERT_REMOTE = createTypertRemoteInfo({
         description: 'the file text; oversized or binary files fail explicitly.',
         jsonSchema: {"type":"object","properties":{"path":{"type":"string"},"text":{"type":"string"}},"required":["path","text"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":326,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":197,"column":9},
     },
   },
 }, z)

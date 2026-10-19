@@ -43,6 +43,7 @@ await build({
     'host/coding-tools': join(host, 'coding-tools', 'index.ts'),
     'host/workbench-inspector': join(host, 'workbench-inspector', 'index.ts'),
     'host/memory': join(host, 'memory', 'index.ts'),
+    'host/skill-manager': join(host, 'workbench-inspector', 'skill-manager', 'index.ts'),
   },
   outdir: join(root, 'lib'),
   chunkNames: 'chunks/[name]-[hash]',
@@ -51,7 +52,8 @@ await build({
   format: 'esm',
   platform: 'node',
   target: 'node22',
-  external: ['zod'],
+  // 普通 npm 库也用官方运行时自带的（已核对 app.asar 里有）。
+  external: ['zod', 'yaml', 'fflate'],
   loader: { '.md': 'text' },
   plugins: [resolveOwn],
   logLevel: 'info',

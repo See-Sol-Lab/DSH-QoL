@@ -27,6 +27,10 @@
     # 项目记忆经官方 system-prompt 注入。
     - id: qol-memory
       name: '@see-sol-lab/dsh-qol/memory'
+    # 本地技能库（从 DeepSeekGUI 搬来）：安装、卸载、按项目启用；技能放在
+    # <DSH home>/deepseekgui/skills，只有项目里选中的才交给该项目的会话。
+    - id: qol-skill-manager
+      name: '@see-sol-lab/dsh-qol/skill-manager'
 
 # 桌面产品统计：界面操作事件（带设备与账号 ID）。可热改。
 - id: product-analytics
