@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "DSH QoL Pack",
+    "description": "DeepSeekGUI quality-of-life details: the four kinds of reporting stay off until you turn them on in Settings; Git status, diff, stage, commit, push and pull-request tools for the assistant (writes need approval)."
+  }
+}

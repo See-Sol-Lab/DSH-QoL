@@ -1,7 +1,7 @@
 {
-  "name": "@see-sol-lab/deepseekgui-qol",
-  "description": "DeepSeekGUI 生活质量包：给 DeepSeek Harness 官方桌面端补上 DeepSeekGUI 的体验细节。第一项：在设置里把四项官方上报交给用户自己开关，默认全关。",
-  "version": "0.2.0",
+  "name": "@see-sol-lab/dsh-qol",
+  "description": "DSH 生活质量包：给 DeepSeek Harness 官方桌面端补上 DeepSeekGUI 的体验细节——四项上报默认关并可在设置里开关，助手可用的 Git 与 PR 工具。",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "main": "lib/index.js",
@@ -9,11 +9,15 @@
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./git-local": "./lib/host/git-local.js",
+    "./pull-request-gh": "./lib/host/pull-request-gh.js",
+    "./coding-tools": "./lib/host/coding-tools.js",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
-    "lib/index.js",
-    "lib/client.js",
+    "lib",
+    "locale/*.json",
     "cordis.patch.yml"
   ],
   "peerDependencies": {
@@ -32,5 +36,11 @@
       "platform": "web",
       "immediately": true
     }
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs"
   }
 }
