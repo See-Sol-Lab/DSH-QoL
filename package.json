@@ -1,6 +1,6 @@
 {
   "name": "@see-sol-lab/dsh-qol",
-  "description": "DSH 生活质量包：给 DeepSeek Harness 官方桌面端补上 DeepSeekGUI 的体验细节——四项上报默认关并可在设置里开关，助手可用的 Git 与 PR 工具。",
+  "description": "DSH 生活质量包：给 DeepSeek Harness 官方桌面端补上体验细节——四项上报默认关并可在设置里开关，助手可用的 Git 与 PR 工具。",
   "version": "0.3.0",
   "private": true,
   "type": "module",
