@@ -1,7 +1,7 @@
 {
   "name": "@see-sol-lab/dsh-qol",
   "description": "DSH 生活质量包：给 DeepSeek Harness 官方桌面端补上体验细节——四项上报默认关并可在设置里开关，助手可用的 Git 与 PR 工具。",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "main": "lib/index.js",
@@ -13,7 +13,13 @@
     "./git-local": "./lib/host/git-local.js",
     "./pull-request-gh": "./lib/host/pull-request-gh.js",
     "./coding-tools": "./lib/host/coding-tools.js",
-    "./locale/*.json": "./locale/*.json"
+    "./locale/*.json": "./locale/*.json",
+    "./workbench-inspector": "./lib/host/workbench-inspector.js",
+    "./typert": {
+      "types": "./lib/typert.host.d.ts",
+      "default": "./lib/typert.host.js"
+    },
+    "./memory": "./lib/host/memory.js"
   },
   "files": [
     "lib",
@@ -45,13 +51,21 @@
     "@deepseek-ai/dsh-client-ui-settings": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "0.2.1-rc.2",
     "@deepseek-ai/dsh-config-editor": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-fs": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-home-paths": "0.2.1-rc.2",
     "@deepseek-ai/dsh-llm": "0.2.1-rc.2",
     "@deepseek-ai/dsh-sandbox": "0.2.1-rc.2",
     "@deepseek-ai/dsh-sandbox-policy": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-session": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-session-query": "0.2.1-rc.2",
     "@deepseek-ai/dsh-subprocess": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "0.2.1-rc.2",
     "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-typert-generator": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.2",
     "@deepseek-ai/dsh-user-approval": "0.2.1-rc.2",
     "@deepseek-ai/dsh-util-values": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-workspace": "0.2.1-rc.2",
     "@deepseek-ai/schemastery": "3.18.5",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",

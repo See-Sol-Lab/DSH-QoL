@@ -41,6 +41,8 @@ await build({
     'host/git-local': join(host, 'git-local', 'index.ts'),
     'host/pull-request-gh': join(host, 'pull-request-gh', 'index.ts'),
     'host/coding-tools': join(host, 'coding-tools', 'index.ts'),
+    'host/workbench-inspector': join(host, 'workbench-inspector', 'index.ts'),
+    'host/memory': join(host, 'memory', 'index.ts'),
   },
   outdir: join(root, 'lib'),
   chunkNames: 'chunks/[name]-[hash]',
@@ -49,9 +51,18 @@ await build({
   format: 'esm',
   platform: 'node',
   target: 'node22',
+  external: ['zod'],
+  loader: { '.md': 'text' },
   plugins: [resolveOwn],
   logLevel: 'info',
 })
+
+// Typert 远程接口描述：由 DeepSeekGUI 仓库里的官方生成器产出、包名换成本包后放在
+// src/generated（官方生成器只认官方单仓库结构）。官方 typert-loader 从本包的
+// ./typert 导出登记 workbenchInspector 的远程方法；浏览器面把 remote-client 打进 client.js。
+for (const name of ['typert.host.js', 'typert.host.d.ts']) {
+  await writeFile(join(root, 'lib', name), await readFile(join(src, 'generated', name)))
+}
 
 const client = await build({
   absWorkingDir: root,

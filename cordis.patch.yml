@@ -19,6 +19,14 @@
       name: '@see-sol-lab/dsh-qol/pull-request-gh'
     - id: qol-coding-tools
       name: '@see-sol-lab/dsh-qol/coding-tools'
+    # 工作台数据（从 DeepSeekGUI 搬来）：改动、Git、并行工作区、记忆四个视图的
+    # 只读数据源，经 Typert 远程方法给浏览器面调用；不调用模型。
+    - id: qol-workbench-inspector
+      name: '@see-sol-lab/dsh-qol/workbench-inspector'
+    # 记忆注入（从 DeepSeekGUI 搬来）：每次开会话把生活质量包说明、全局记忆与
+    # 项目记忆经官方 system-prompt 注入。
+    - id: qol-memory
+      name: '@see-sol-lab/dsh-qol/memory'
 
 # 桌面产品统计：界面操作事件（带设备与账号 ID）。可热改。
 - id: product-analytics
