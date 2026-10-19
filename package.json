@@ -1,7 +1,7 @@
 {
   "name": "@see-sol-lab/deepseekgui-qol",
   "description": "DeepSeekGUI 生活质量包：给 DeepSeek Harness 官方桌面端补上 DeepSeekGUI 的体验细节。第一项：在设置里把四项官方上报交给用户自己开关，默认全关。",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "main": "lib/index.js",
@@ -16,6 +16,9 @@
     "lib/client.js",
     "cordis.patch.yml"
   ],
+  "peerDependencies": {
+    "@deepseek-ai/schemastery": "^3.18.0"
+  },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
