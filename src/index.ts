@@ -39,12 +39,15 @@ export interface Config {
   feedback: Volatile<boolean>
   /** DSH 启动与退出时撤掉官方沙箱留在工作区上的 Low 标签。默认开。 */
   revokeLowLabel: Volatile<boolean>
+  /** 生活质量包皮肤（底图 + 半透明 + 毛玻璃，浏览器侧读）。默认开。 */
+  skin: Volatile<boolean>
 }
 
 export const Config = z.object({
   inventory: z.boolean().default(false).volatile(),
   feedback: z.boolean().default(false).volatile(),
   revokeLowLabel: z.boolean().default(true).volatile(),
+  skin: z.boolean().default(true).volatile(),
 })
 
 type Key = 'inventory' | 'feedback'

@@ -75,6 +75,8 @@ const client = await build({
   platform: 'browser',
   target: 'es2022',
   jsx: 'automatic',
+  // 皮肤底图内嵌成 data URL（两张 webp 共约 66KB）。
+  loader: { '.webp': 'dataurl' },
   // 官方 client 运行时的 require 提供这几样；其余（含生成的远程接口描述与它用到的
   // typert-protocol/remote-info）打进 client.js，与 DeepSeekGUI 的产物一致。
   external: ['react', 'react/jsx-runtime', 'zod', '@deepseek-ai/dsh-client-ui-primitives'],

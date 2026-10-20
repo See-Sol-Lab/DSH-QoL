@@ -17,6 +17,7 @@ import { en, zh, type QolLocaleKey } from './locales.ts'
 import { applyWorkbench, workbenchInject } from './workbench/register.tsx'
 import { applyNotify } from './notify/register.tsx'
 import { applySkills } from './skills/register.tsx'
+import { installSkin } from './skin.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -31,7 +32,7 @@ type Values = Record<string, unknown>
 
 /** 一行开关：Host 条目、字段、怎么判断「开」、打开时写什么。 */
 interface Item {
-  key: 'analytics' | 'sessionLog' | 'inventory' | 'feedback' | 'lowLabel'
+  key: 'analytics' | 'sessionLog' | 'inventory' | 'feedback' | 'lowLabel' | 'skin'
   entry: string
   field: string
   onValue: unknown
@@ -53,6 +54,12 @@ const ITEMS: readonly Item[] = [
 const LOW_LABEL_ITEM: Item = {
   key: 'lowLabel', entry: 'dsh-qol', field: 'revokeLowLabel', onValue: true, offValue: false,
   isOn: v => v['revokeLowLabel'] !== false,
+}
+
+/** 皮肤：本包自己的 volatile 字段，默认开，浏览器侧读（见 skin.ts）。 */
+const SKIN_ITEM: Item = {
+  key: 'skin', entry: 'dsh-qol', field: 'skin', onValue: true, offValue: false,
+  isOn: v => v['skin'] !== false,
 }
 
 const S = {
@@ -153,6 +160,11 @@ function makeSection(ctx: Context, t: T): () => ReactElement {
           {ITEMS.map((item, i) => <ItemRow key={item.key} ctx={ctx} t={t} item={item} first={i === 0} />)}
         </div>
         <div style={S.note}>{t('privacy.uninstall')}</div>
+        <div style={{ ...S.title, marginTop: 12 }}>{t('skin.title')}</div>
+        <div style={S.note}>{t('skin.intro')}</div>
+        <div style={S.card}>
+          <ItemRow ctx={ctx} t={t} item={SKIN_ITEM} first />
+        </div>
         <div style={{ ...S.title, marginTop: 12 }}>{t('lowLabel.title')}</div>
         <div style={S.note}>{t('lowLabel.intro1')}</div>
         <div style={S.note}>{t('lowLabel.intro2')}</div>
@@ -186,6 +198,12 @@ export async function apply(ctx: Context): Promise<void> {
   } catch (error) {
     console.error(`[dsh-qol] privacy section failed: ${error instanceof Error ? error.message : String(error)}`)
   }
+  // 皮肤：跟着开关装上或撤掉；官方主题服务缺席时什么都不做。
+  try {
+    applySkin(ctx)
+  } catch (error) {
+    console.error(`[dsh-qol] skin failed: ${error instanceof Error ? error.message : String(error)}`)
+  }
   // 工作台（三个标签、全局记忆、工具卡片）。同样兜底：坏了只少这部分，不拖垮界面。
   try {
     await applyWorkbench(ctx)
@@ -204,4 +222,22 @@ export async function apply(ctx: Context): Promise<void> {
   } catch (error) {
     console.error(`[dsh-qol] skills failed: ${error instanceof Error ? error.message : String(error)}`)
   }
+}
+
+/** 皮肤开关：读本包 skin 字段（默认开），变了就装上或撤掉。 */
+function applySkin(ctx: Context): void {
+  ctx.inject(['theme', 'configForms'], (scoped) => {
+    const form = scoped.configForms.get<Values>('dsh-qol')
+    let dispose: (() => void) | undefined
+    const sync = (): void => {
+      const snap = form.getSnapshot()
+      // 读不到配置（加载中、后台没起来）时按默认开。
+      const want = snap.status !== 'ready' || snap.value?.['skin'] !== false
+      if (want && dispose === undefined) dispose = installSkin(scoped)
+      else if (!want && dispose !== undefined) { dispose(); dispose = undefined }
+    }
+    sync()
+    const unsubscribe = form.subscribe(sync)
+    scoped.effect(() => () => { unsubscribe(); dispose?.(); dispose = undefined }, 'dsh-qol: skin')
+  })
 }
