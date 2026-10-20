@@ -7,7 +7,7 @@
  *
  * GUI 是改官方 ui-chat 加了个 chatTextDisplay 服务；官方桌面端没有这个口子，所以
  * 在 conversation.chat.node 的 assistant-step 格子上用更低的 priority 叠一个包装：
- * 原样带上官方条目的文案空间、子插槽声明和 inject，渲染时调官方 AssistantNodeView，
+ * 原样带上官方条目的文案空间和 inject（子插槽声明借用官方的），渲染时调官方 AssistantNodeView，
  * 只把 node.data.blocks 里 text 块换成当前帧的前缀。包装崩了，插槽框架会让它退位，
  * 官方组件照常渲染。
  */
@@ -17,21 +17,30 @@ import type { Context } from '@deepseek-ai/cordis'
 
 /** Display budget for streaming assistant prose; pure presentation constants. */
 interface SmoothTextConfig {
-  /** Characters released per second at the comfortable reading pace. */
+  /** Floor pace (chars per second), so a slow stream or the tail never crawls. */
   readonly charsPerSecond: number
-  /** Hard per-frame ceiling (high-refresh displays). */
-  readonly maxCharsPerFrame: number
-  /** Backlog beyond which the display jumps forward instead of catching up. */
+  /**
+   * Target display lag (ms) behind the stream. DSH-QoL: the GUI paced at a
+   * fixed 220 chars/s, which fast models (V4 Flash streams several hundred
+   * CJK chars/s) outran — the backlog kept hitting the jump ceiling and the
+   * text leapt forward in chunks. Now the pace follows the measured arrival
+   * rate, and this lag buffers the gaps between bursts.
+   */
+  readonly lagMs: number
+  /** How quickly (ms) a lag error is corrected; larger is gentler. */
+  readonly correctionMs: number
+  /** Backlog beyond which the display jumps forward (safety only). */
   readonly maxBacklogChars: number
   /** Blocks tracked at once; the oldest schedule is dropped first. */
   readonly maxBlocks: number
 }
 
-/** Default budget: ~220 chars/s, at most 24 chars per frame, 600-char ceiling. */
+/** Default: arrival-rate pace, about 300 ms behind, never slower than 60 chars/s. */
 const DEFAULT_SMOOTH_TEXT: SmoothTextConfig = {
-  charsPerSecond: 220,
-  maxCharsPerFrame: 24,
-  maxBacklogChars: 600,
+  charsPerSecond: 60,
+  lagMs: 300,
+  correctionMs: 400,
+  maxBacklogChars: 4000,
   maxBlocks: 8,
 }
 
@@ -54,6 +63,11 @@ interface BlockSchedule {
   lastMs: number
   /** Unspent release budget carried across frames, so the pace stays exact. */
   credit: number
+  /** Smoothed arrival rate (chars per second) of this block's stream. */
+  rate: number
+  /** When the text last grew, and its length then (arrival-rate sampling). */
+  grewMs: number | undefined
+  grewLength: number
 }
 
 /** UTF-16 high surrogate (first half of a non-BMP character). */
@@ -106,11 +120,11 @@ class SmoothedTextDisplay {
     if (schedule !== undefined && !text.startsWith(schedule.target)) {
       // The authority replaced this block's text (edit or regeneration):
       // show the new text whole rather than replaying a different history.
-      this.schedules.set(key, { shown: text.length, target: text, lastMs: nowMs, credit: 0 })
+      this.schedules.set(key, { shown: text.length, target: text, lastMs: nowMs, credit: 0, rate: 0, grewMs: undefined, grewLength: text.length })
       return text
     }
     if (schedule === undefined) {
-      schedule = { shown: 0, target: text, lastMs: nowMs, credit: 0 }
+      schedule = { shown: 0, target: text, lastMs: nowMs, credit: 0, rate: 0, grewMs: undefined, grewLength: 0 }
       this.track(key, schedule)
     }
     schedule.target = text
@@ -118,13 +132,21 @@ class SmoothedTextDisplay {
     schedule.lastMs = nowMs
     const backlog = text.length - schedule.shown
     if (backlog <= 0) return text
-    const { charsPerSecond, maxCharsPerFrame, maxBacklogChars } = this.config
-    // Reading pace, capped per frame so a high-refresh display cannot outrun
-    // it; at least one character per call keeps progress monotone. Unspent
-    // budget carries over, so the average rate does not lose a fraction each
-    // frame and a long reply still lands on a predictable schedule.
-    schedule.credit = Math.min(maxBacklogChars, schedule.credit + (charsPerSecond / 1_000) * elapsed)
-    const released = Math.max(1, Math.min(maxCharsPerFrame, Math.floor(schedule.credit)))
+    const { charsPerSecond, lagMs, correctionMs, maxBacklogChars } = this.config
+    // Sample the arrival rate whenever the authoritative text grew.
+    if (text.length > schedule.grewLength) {
+      if (schedule.grewMs !== undefined) {
+        const sample = (text.length - schedule.grewLength) / Math.max(16, nowMs - schedule.grewMs) * 1_000
+        schedule.rate = schedule.rate === 0 ? sample : schedule.rate * 0.7 + sample * 0.3
+      }
+      schedule.grewMs = nowMs
+      schedule.grewLength = text.length
+    }
+    // Release at the arrival rate, nudged toward a steady lag behind the
+    // stream; the lag absorbs the gaps between bursts, so the flow stays even.
+    const pace = Math.max(charsPerSecond, schedule.rate + (backlog - schedule.rate * lagMs / 1_000) * 1_000 / correctionMs)
+    schedule.credit = Math.min(backlog, schedule.credit + pace / 1_000 * elapsed)
+    const released = Math.max(1, Math.floor(schedule.credit))
     schedule.credit = Math.max(0, schedule.credit - released)
     schedule.shown = Math.min(text.length, schedule.shown + released)
     // Jump forward past the ceiling: the following tool card must not wait.
@@ -174,6 +196,7 @@ interface StoredEntry {
   component: unknown
   options: { key?: string; priority?: number }
   inject?: ((...args: never[]) => Record<string, unknown>) | undefined
+  children?: Readonly<Record<string, unknown>> | undefined
 }
 
 interface AssistantBlock { kind: string; text?: string }
@@ -181,6 +204,10 @@ interface AssistantNode {
   key: string
   data: { status: string; blocks: readonly AssistantBlock[] }
 }
+
+/** 诊断：控制台里看 window.__dshQolSmooth（是否注册上、注册失败原因、包装渲染次数）。 */
+const diag = { registered: false, error: null as string | null, renders: 0, borrowed: false }
+;(globalThis as { __dshQolSmooth?: typeof diag }).__dshQolSmooth = diag
 
 /** 全页一个调度器，所有正在流式的正文块共用。 */
 const smoother = new SmoothedTextDisplay()
@@ -211,8 +238,21 @@ export function installSmoothText(ctx: Context): () => void {
     .filter(entry => entry.options.key === KEY && entry.component !== self)
     .sort((a, b) => (a.options.priority ?? 0) - (b.options.priority ?? 0))[0]
 
+  /**
+   * 子插槽（思考过程正文、消息图片）只能有一个声明者，官方条目已经声明，我们再声明
+   * 会注册失败；可官方组件经我们条目的 renderSlot 渲染它们，而 renderSlot 调用时检查
+   * 的是我们条目的 children。所以不在注册时声明，渲染前把官方条目的声明挂到我们条目上。
+   */
+  const borrowChildren = (entry: StoredEntry): void => {
+    const mine = host.entriesOf(SLOT).find(candidate => candidate.component === self)
+    if (mine === undefined || mine.children !== undefined || entry.children === undefined) return
+    try { mine.children = entry.children; diag.borrowed = true } catch { /* 改不了就让官方组件报错退位，官方照常渲染 */ }
+  }
+
   function SmoothAssistantStep(props: Record<string, unknown>): ReactNode {
     const entry = original()
+    if (entry !== undefined) borrowChildren(entry)
+    diag.renders += 1
     const node = props['node'] as AssistantNode
     const streaming = node.data.status === 'running'
     const behind = useRef(false)
@@ -237,17 +277,23 @@ export function installSmoothText(ctx: Context): () => void {
   }
   self = SmoothAssistantStep
 
-  const register = ctx.slots.register as unknown as (options: Record<string, unknown>, component: unknown) => () => void
-  return ctx.slots.inject(SLOT as never, () => register({
-    name: SLOT,
-    key: KEY,
-    priority: -1,
-    // 与官方条目相同：文案空间、两个子插槽、inject（hooks.presentation）。
-    locale: 'chat',
-    children: {
-      'conversation.chat.reasoning.body': { kind: 'single', scope: 'session' },
-      'conversation.chat.message.images': { kind: 'single', scope: 'session' },
-    },
-    inject: (...args: never[]) => original()?.inject?.(...args) ?? {},
-  }, SmoothAssistantStep)) as unknown as () => void
+  // 要绑定 ctx.slots：register 内部用 this（单独取出来调用会丢掉 this）。
+  const register = (ctx.slots.register as unknown as (options: Record<string, unknown>, component: unknown) => () => void).bind(ctx.slots)
+  return ctx.slots.inject(SLOT as never, () => {
+    try {
+      const dispose = register({
+        name: SLOT,
+        key: KEY,
+        priority: -1,
+        // 与官方条目相同的文案空间与 inject（hooks.presentation）；子插槽见 borrowChildren。
+        locale: 'chat',
+        inject: (...args: never[]) => original()?.inject?.(...args) ?? {},
+      }, SmoothAssistantStep)
+      diag.registered = true
+      return dispose
+    } catch (error) {
+      diag.error = error instanceof Error ? error.message : String(error)
+      throw error
+    }
+  }) as unknown as () => void
 }
