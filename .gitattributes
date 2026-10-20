@@ -1,1 +1,5 @@
 * text=auto eol=lf
+
+# 构建产物与生成的远程接口描述：GitHub 语言统计不计入
+lib/** linguist-generated
+src/generated/** linguist-generated
