@@ -33,7 +33,7 @@ type Values = Record<string, unknown>
 
 /** 一行开关：Host 条目、字段、怎么判断「开」、打开时写什么。 */
 interface Item {
-  key: 'analytics' | 'sessionLog' | 'inventory' | 'feedback' | 'lowLabel' | 'skin'
+  key: 'analytics' | 'sessionLog' | 'inventory' | 'feedback' | 'lowLabel' | 'workspaceAccess' | 'skin'
   entry: string
   field: string
   onValue: unknown
@@ -55,6 +55,12 @@ const ITEMS: readonly Item[] = [
 const LOW_LABEL_ITEM: Item = {
   key: 'lowLabel', entry: 'dsh-qol', field: 'revokeLowLabel', onValue: true, offValue: false,
   isOn: v => v['revokeLowLabel'] !== false,
+}
+
+/** 工作区沙箱授权自动修复：本包自己的 volatile 字段，默认开（Host 面见 src/workspace-access.ts）。 */
+const WORKSPACE_ACCESS_ITEM: Item = {
+  key: 'workspaceAccess', entry: 'dsh-qol', field: 'fixWorkspaceAccess', onValue: true, offValue: false,
+  isOn: v => v['fixWorkspaceAccess'] !== false,
 }
 
 /** 皮肤：本包自己的 volatile 字段，默认开，浏览器侧读（见 skin.ts）。 */
@@ -171,6 +177,7 @@ function makeSection(ctx: Context, t: T): () => ReactElement {
         <div style={S.note}>{t('lowLabel.intro2')}</div>
         <div style={S.card}>
           <ItemRow ctx={ctx} t={t} item={LOW_LABEL_ITEM} first />
+          <ItemRow ctx={ctx} t={t} item={WORKSPACE_ACCESS_ITEM} first={false} />
         </div>
       </div>
     )

@@ -26,9 +26,11 @@ import type {} from '@deepseek-ai/dsh-llm'
 import { registerModelSight } from './host/model-sight.ts'
 import { defaultDshHome } from '@deepseek-ai/dsh-home-paths'
 import { collectRoots, revokeLowLabels, revokeLowLabelsSync } from './low-label.ts'
+import { fixWorkspaceAccess } from './workspace-access.ts'
 import { EOL } from 'node:os'
 import SANDBOX_REVOKE_TEXT from '../assets/qol-sandbox-revoke.md'
 import SANDBOX_RULES_TEXT from '../assets/qol-sandbox-rules.md'
+import SANDBOX_ACCESS_TEXT from '../assets/qol-sandbox-access.md'
 
 export const name = 'dsh-qol'
 export const inject = ['configEditor']
@@ -41,6 +43,8 @@ export interface Config {
   revokeLowLabel: Volatile<boolean>
   /** 生活质量包皮肤（底图 + 半透明 + 毛玻璃，浏览器侧读）。默认开。 */
   skin: Volatile<boolean>
+  /** 给当前用户补上工作区的完全控制，让官方沙箱在非系统盘也能首次授权。默认开。 */
+  fixWorkspaceAccess: Volatile<boolean>
 }
 
 export const Config = z.object({
@@ -48,6 +52,7 @@ export const Config = z.object({
   feedback: z.boolean().default(false).volatile(),
   revokeLowLabel: z.boolean().default(true).volatile(),
   skin: z.boolean().default(true).volatile(),
+  fixWorkspaceAccess: z.boolean().default(true).volatile(),
 })
 
 type Key = 'inventory' | 'feedback'
@@ -100,6 +105,7 @@ export function apply(ctx: Context, config: Config): void {
 
   if (process.platform === 'win32') {
     applyLowLabelRevoke(ctx, config)
+    applyWorkspaceAccess(ctx, config)
     applySandboxNote(ctx, config)
   }
 }
@@ -107,6 +113,7 @@ export function apply(ctx: Context, config: Config): void {
 /** 给助手的沙箱说明：开关开着时说明插件会撤标签；不论开关，碰到权限报错都先停下问用户。 */
 const SANDBOX_NOTE_REVOKE = SANDBOX_REVOKE_TEXT.trimEnd()
 const SANDBOX_NOTE_RULES = SANDBOX_RULES_TEXT.trimEnd()
+const SANDBOX_NOTE_ACCESS = SANDBOX_ACCESS_TEXT.trimEnd()
 
 /**
  * 每次组装系统提示时，按开关给出沙箱说明（新会话 / 新窗口生效）。
@@ -120,12 +127,46 @@ function applySandboxNote(ctx: Context, config: Config): void {
       context(section: { name: string; order: number; text: string }): () => void
     } }).systemPrompt
     scoped.effect(() => {
-      const disposeVariable = systemPrompt.variable('dsh_qol_sandbox_note', () =>
-        config.revokeLowLabel.get() === false ? SANDBOX_NOTE_RULES : [SANDBOX_NOTE_REVOKE, SANDBOX_NOTE_RULES].join(EOL))
+      const disposeVariable = systemPrompt.variable('dsh_qol_sandbox_note', () => [
+        config.revokeLowLabel.get() === false ? undefined : SANDBOX_NOTE_REVOKE,
+        config.fixWorkspaceAccess.get() === false ? undefined : SANDBOX_NOTE_ACCESS,
+        SANDBOX_NOTE_RULES,
+      ].filter(part => part !== undefined).join(EOL))
       // 排在生活质量包说明（999_999）之前、记忆（1_000_000）之前。
       const disposeSection = systemPrompt.context({ name: 'dsh-qol:sandbox', order: 999_998, text: '{{dsh_qol_sandbox_note}}' })
       return () => { disposeSection(); disposeVariable() }
     }, 'dsh-qol: sandbox note')
+  })
+}
+
+/**
+ * 工作区沙箱授权自动修复：启动时查全部工作区，之后每 5 秒看注册表有没有新工作区
+ * （官方注册表没有变化通知）。开关关着时不查，打开后下一轮补上。
+ * @param ctx - 插件上下文。
+ * @param config - 本包配置（fixWorkspaceAccess 开关）。
+ */
+function applyWorkspaceAccess(ctx: Context, config: Config): void {
+  ctx.inject(['workspaceRegistry'], (scoped) => {
+    const home = dshHome()
+    const done = new Set<string>()
+    let running: Promise<void> = Promise.resolve()
+    const check = (roots: readonly string[]): void => {
+      if (config.fixWorkspaceAccess.get() === false) return
+      const fresh = roots.filter(root => !done.has(root.toLowerCase()))
+      if (fresh.length === 0) return
+      for (const root of fresh) done.add(root.toLowerCase())
+      running = running.then(async () => {
+        for (const result of await fixWorkspaceAccess(fresh, home)) {
+          if (result.changed) console.info(`[dsh-qol] granted Full control on ${result.root} for the sandbox`)
+          // 失败不在本次运行里重试（原因多半一直在，重试只会每 5 秒起一个进程）；下次启动再查。
+          if (result.error !== null) console.warn(`[dsh-qol] workspace access fix failed for ${result.root}: ${result.error}`)
+        }
+      })
+    }
+    const registered = (): string[] => scoped.workspaceRegistry.list().map(workspace => workspace.path)
+    check(collectRoots(home, registered()))
+    const timer = setInterval(() => { try { check(registered()) } catch { /* 注册表已卸载 */ } }, 5_000)
+    scoped.effect(() => () => { clearInterval(timer) }, 'dsh-qol: workspace access watch')
   })
 }
 
