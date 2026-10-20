@@ -18,6 +18,7 @@ import { applyWorkbench, workbenchInject } from './workbench/register.tsx'
 import { applyNotify } from './notify/register.tsx'
 import { applySkills } from './skills/register.tsx'
 import { installSkin } from './skin.ts'
+import { installSmoothText } from './smooth-text.tsx'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -197,6 +198,12 @@ export async function apply(ctx: Context): Promise<void> {
     }, Section))
   } catch (error) {
     console.error(`[dsh-qol] privacy section failed: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  // 流式正文平滑显示：叠在官方助手正文渲染器上，包装出错时官方照常渲染。
+  try {
+    ctx.inject(['slots'], (scoped) => { scoped.effect(() => installSmoothText(scoped), 'dsh-qol: smooth text') })
+  } catch (error) {
+    console.error(`[dsh-qol] smooth text failed: ${error instanceof Error ? error.message : String(error)}`)
   }
   // 皮肤：跟着开关装上或撤掉；官方主题服务缺席时什么都不做。
   try {
