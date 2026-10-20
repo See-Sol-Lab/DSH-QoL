@@ -19,7 +19,7 @@
 - **撤销沙箱 Low 标签**（默认开）：官方沙箱会给用过的工作区永久打上 Low 完整性标签，文件夹里的 Electron、打包工具、自己编译的程序会以低权限启动而失败。打开后 DSH 每次启动和退出时撤掉官方沙箱加的三样（沙箱身份写入授权、Everyone 禁止删除子项、Low 标签改回 Medium），其他权限不动，先备份到 `<DSH home>/deepseekgui/acl-backups`。
 - **助手用的 Git 与 PR 工具**：`git_status`、`git_diff`、`git_stage`、`git_unstage`、`git_revert`、`git_commit`、`git_push_preview`、`git_push`、`pr_availability`、`pr_existing`、`pr_create`，对话里显示为结果卡片。写操作需要用户审批。
 
-暂不可用：在文件管理器中定位文件；技能库在另一个窗口里改动后，本窗口要手动刷新（官方不转发技能库的变化事件）。
+技能库在另一个窗口里改动后，本窗口要手动刷新（官方不转发技能库的变化事件）。
 
 ## 远程接口描述（src/generated）
 
