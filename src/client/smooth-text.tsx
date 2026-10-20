@@ -19,28 +19,28 @@ import type { Context } from '@deepseek-ai/cordis'
 interface SmoothTextConfig {
   /** Floor pace (chars per second), so a slow stream or the tail never crawls. */
   readonly charsPerSecond: number
-  /**
-   * Target display lag (ms) behind the stream. DSH-QoL: the GUI paced at a
-   * fixed 220 chars/s, which fast models (V4 Flash streams several hundred
-   * CJK chars/s) outran — the backlog kept hitting the jump ceiling and the
-   * text leapt forward in chunks. Now the pace follows the measured arrival
-   * rate, and this lag buffers the gaps between bursts.
-   */
-  readonly lagMs: number
   /** How quickly (ms) a lag error is corrected; larger is gentler. */
   readonly correctionMs: number
+  /** Display pace as a share of the measured arrival rate (below 1 trails the stream a little). */
+  readonly speedFactor: number
+  /** Once the stream settles, the remainder flows out within about this many ms. */
+  readonly drainMs: number
+  /** Floor pace (chars per second) while flowing out the remainder. */
+  readonly drainCharsPerSecond: number
   /** Backlog beyond which the display jumps forward (safety only). */
   readonly maxBacklogChars: number
   /** Blocks tracked at once; the oldest schedule is dropped first. */
   readonly maxBlocks: number
 }
 
-/** Default: arrival-rate pace, about 300 ms behind, never slower than 60 chars/s. */
+/** Default: 80% of the arrival rate, never slower than 60 chars/s; the remainder flows out within ~0.8 s at settle. */
 const DEFAULT_SMOOTH_TEXT: SmoothTextConfig = {
   charsPerSecond: 60,
-  lagMs: 300,
   correctionMs: 400,
-  maxBacklogChars: 4000,
+  speedFactor: 0.8,
+  drainMs: 800,
+  drainCharsPerSecond: 600,
+  maxBacklogChars: 20000,
   maxBlocks: 8,
 }
 
@@ -68,6 +68,8 @@ interface BlockSchedule {
   /** When the text last grew, and its length then (arrival-rate sampling). */
   grewMs: number | undefined
   grewLength: number
+  /** Pace (chars per second) for flowing out the remainder after the stream settled. */
+  drain?: number
 }
 
 /** UTF-16 high surrogate (first half of a non-BMP character). */
@@ -111,11 +113,24 @@ class SmoothedTextDisplay {
     const { key, text, streaming } = input
     // Settled text is authoritative at once: no animation may outlive the
     // turn it belongs to (turn end, stop, error, reconnect).
-    if (!streaming) {
-      this.schedules.delete(key)
-      return text
-    }
     const nowMs = this.now()
+    if (!streaming) {
+      // DSH-QoL: the display deliberately trails the stream, so at settle the
+      // remainder flows out quickly instead of landing in one leap. Text that
+      // never streamed (history, reload) has no schedule and shows at once.
+      const settling = this.schedules.get(key)
+      if (settling === undefined || !text.startsWith(settling.target) || settling.shown >= text.length) {
+        this.schedules.delete(key)
+        return text
+      }
+      settling.target = text
+      settling.drain ??= Math.max(this.config.drainCharsPerSecond, (text.length - settling.shown) * 1_000 / this.config.drainMs)
+      const step = Math.max(1, Math.floor(settling.drain / 1_000 * Math.max(0, nowMs - settling.lastMs)))
+      settling.lastMs = nowMs
+      settling.shown = Math.min(text.length, settling.shown + step)
+      if (settling.shown >= text.length) this.schedules.delete(key)
+      return text.slice(0, settling.shown)
+    }
     let schedule = this.schedules.get(key)
     if (schedule !== undefined && !text.startsWith(schedule.target)) {
       // The authority replaced this block's text (edit or regeneration):
@@ -132,7 +147,7 @@ class SmoothedTextDisplay {
     schedule.lastMs = nowMs
     const backlog = text.length - schedule.shown
     if (backlog <= 0) return text
-    const { charsPerSecond, lagMs, correctionMs, maxBacklogChars } = this.config
+    const { charsPerSecond, correctionMs, maxBacklogChars } = this.config
     // Sample the arrival rate whenever the authoritative text grew.
     if (text.length > schedule.grewLength) {
       if (schedule.grewMs !== undefined) {
@@ -144,7 +159,12 @@ class SmoothedTextDisplay {
     }
     // Release at the arrival rate, nudged toward a steady lag behind the
     // stream; the lag absorbs the gaps between bursts, so the flow stays even.
-    const pace = Math.max(charsPerSecond, schedule.rate + (backlog - schedule.rate * lagMs / 1_000) * 1_000 / correctionMs)
+    // Show a little slower than the stream arrives (speedFactor), the eye
+    // follows that more easily; early on, before the rate is known, steer
+    // toward the lag target so the first lines do not crawl.
+    const pace = schedule.rate === 0
+      ? Math.max(charsPerSecond, backlog * 1_000 / correctionMs)
+      : Math.max(charsPerSecond, schedule.rate * this.config.speedFactor)
     schedule.credit = Math.min(backlog, schedule.credit + pace / 1_000 * elapsed)
     const released = Math.max(1, Math.floor(schedule.credit))
     schedule.credit = Math.max(0, schedule.credit - released)
@@ -256,7 +276,8 @@ export function installSmoothText(ctx: Context): () => void {
     const node = props['node'] as AssistantNode
     const streaming = node.data.status === 'running'
     const behind = useRef(false)
-    useFrameTick(streaming, behind)
+    // 流式结束后若还有没放完的字，继续逐帧放完。
+    useFrameTick(streaming || behind.current, behind)
     const keys = useRef<string[]>([])
     useEffect(() => () => { for (const key of keys.current) smoother.release(key) }, [])
     let catchingUp = false
