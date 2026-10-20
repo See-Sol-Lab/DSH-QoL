@@ -251,10 +251,10 @@ function useFrameTick(active: boolean, behind: { current: boolean }): void {
  * @returns 撤掉包装的函数。
  */
 export function installSmoothText(ctx: Context): () => void {
-  const host = ctx.slots as unknown as { entriesOf(key: string): readonly StoredEntry[] }
+  const host = ctx.slots as unknown as { entries(key: string): readonly StoredEntry[] }
   let self: unknown
   /** 官方（被我们压住的）那一条：同格子里除自己以外 priority 最低的。 */
-  const original = (): StoredEntry | undefined => host.entriesOf(SLOT)
+  const original = (): StoredEntry | undefined => host.entries(SLOT)
     .filter(entry => entry.options.key === KEY && entry.component !== self)
     .sort((a, b) => (a.options.priority ?? 0) - (b.options.priority ?? 0))[0]
 
@@ -264,7 +264,7 @@ export function installSmoothText(ctx: Context): () => void {
    * 的是我们条目的 children。所以不在注册时声明，渲染前把官方条目的声明挂到我们条目上。
    */
   const borrowChildren = (entry: StoredEntry): void => {
-    const mine = host.entriesOf(SLOT).find(candidate => candidate.component === self)
+    const mine = host.entries(SLOT).find(candidate => candidate.component === self)
     if (mine === undefined || mine.children !== undefined || entry.children === undefined) return
     try { mine.children = entry.children; diag.borrowed = true } catch { /* 改不了就让官方组件报错退位，官方照常渲染 */ }
   }
