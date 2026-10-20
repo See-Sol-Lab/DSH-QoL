@@ -6,7 +6,7 @@ import type {
 } from '@deepseek-ai/dsh-typert-protocol'
 import type { DiffResult, DiffScope } from '@deepseek-ai/dsh-git/types'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { MemoryInjection, SkillImportOutcome, SkillImportPreview, SkillImportRequest, SkillInstallReferences, SkillInventory, SkillProjectSelectionOutcome, SkillProjectSelectionRequest, SkillProjectView, SkillUninstallOutcome, WorkbenchExportLanguage, WorkbenchExportMarkdown, WorkbenchFileText, WorkbenchGlobalMemory, WorkbenchLastReply, WorkbenchMemory, WorkbenchOverview, WorkbenchRepository, WorkbenchSandboxClean, WorkbenchSeedLocale, WorkbenchUsage } from '@see-sol-lab/dsh-qol/types'
+import type { SkillImportOutcome, SkillImportPreview, SkillImportRequest, SkillInstallReferences, SkillInventory, SkillProjectSelectionOutcome, SkillProjectSelectionRequest, SkillProjectView, SkillUninstallOutcome, WorkbenchExportLanguage, WorkbenchExportMarkdown, WorkbenchFileText, WorkbenchGlobalMemory, WorkbenchMemory, WorkbenchOverview, WorkbenchRepository, WorkbenchSeedLocale, WorkbenchUsage } from '@see-sol-lab/dsh-qol/types'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$736b696c6c4d616e61676572 {
@@ -20,15 +20,12 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   }
   interface TypertRemoteNamespace$776f726b62656e6368496e73706563746f72 {
     accountUsage: (locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchUsage>>
-    cleanSandboxMarks: (path: string, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchSandboxClean>>
     createProjectAgents: (sessionId: SessionId, locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<'created' | 'exists'>>
     deleteSession: (sessionId: SessionId, signature: string) => Promise<RemoteResult<void>>
     diff: (sessionId: SessionId, scope: DiffScope, path: string, signal?: AbortSignal) => Promise<RemoteResult<DiffResult>>
     exportMarkdown: (sessionId: SessionId, includeDetails: boolean, language: WorkbenchExportLanguage, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchExportMarkdown>>
     globalMemory: (signal?: AbortSignal) => Promise<RemoteResult<WorkbenchGlobalMemory>>
-    lastReply: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchLastReply>>
     memory: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchMemory>>
-    memoryInjection: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<MemoryInjection | null>>
     overview: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchOverview>>
     saveGlobalMemory: (content: string, expected: string, signal?: AbortSignal) => Promise<RemoteResult<void>>
     saveProjectMemory: (sessionId: SessionId, content: string, expected: string, signal?: AbortSignal) => Promise<RemoteResult<void>>
@@ -44,15 +41,12 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'skillManager/setProjectSelection': (request: SkillProjectSelectionRequest, signal?: AbortSignal) => Promise<RemoteResult<SkillProjectSelectionOutcome>>
     'skillManager/uninstall': (installId: string, signal?: AbortSignal) => Promise<RemoteResult<SkillUninstallOutcome>>
     'workbenchInspector/accountUsage': (locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchUsage>>
-    'workbenchInspector/cleanSandboxMarks': (path: string, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchSandboxClean>>
     'workbenchInspector/createProjectAgents': (sessionId: SessionId, locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<'created' | 'exists'>>
     'workbenchInspector/deleteSession': (sessionId: SessionId, signature: string) => Promise<RemoteResult<void>>
     'workbenchInspector/diff': (sessionId: SessionId, scope: DiffScope, path: string, signal?: AbortSignal) => Promise<RemoteResult<DiffResult>>
     'workbenchInspector/exportMarkdown': (sessionId: SessionId, includeDetails: boolean, language: WorkbenchExportLanguage, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchExportMarkdown>>
     'workbenchInspector/globalMemory': (signal?: AbortSignal) => Promise<RemoteResult<WorkbenchGlobalMemory>>
-    'workbenchInspector/lastReply': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchLastReply>>
     'workbenchInspector/memory': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchMemory>>
-    'workbenchInspector/memoryInjection': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<MemoryInjection | null>>
     'workbenchInspector/overview': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchOverview>>
     'workbenchInspector/saveGlobalMemory': (content: string, expected: string, signal?: AbortSignal) => Promise<RemoteResult<void>>
     'workbenchInspector/saveProjectMemory': (sessionId: SessionId, content: string, expected: string, signal?: AbortSignal) => Promise<RemoteResult<void>>
@@ -74,15 +68,12 @@ export declare const TYPERT_REMOTE: TypertRemoteInfo<{
   readonly 'skillManager/setProjectSelection': TypertRemoteMethod<{ readonly 'request': SkillProjectSelectionRequest }, SkillProjectSelectionOutcome>
   readonly 'skillManager/uninstall': TypertRemoteMethod<{ readonly 'installId': string }, SkillUninstallOutcome>
   readonly 'workbenchInspector/accountUsage': TypertRemoteMethod<{ readonly 'locale': WorkbenchSeedLocale }, WorkbenchUsage>
-  readonly 'workbenchInspector/cleanSandboxMarks': TypertRemoteMethod<{ readonly 'path': string }, WorkbenchSandboxClean>
   readonly 'workbenchInspector/createProjectAgents': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'locale': WorkbenchSeedLocale }, 'created' | 'exists'>
   readonly 'workbenchInspector/deleteSession': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'signature': string }, void>
   readonly 'workbenchInspector/diff': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'scope': DiffScope; readonly 'path': string }, DiffResult>
   readonly 'workbenchInspector/exportMarkdown': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'includeDetails': boolean; readonly 'language': WorkbenchExportLanguage }, WorkbenchExportMarkdown>
   readonly 'workbenchInspector/globalMemory': TypertRemoteMethod<{  }, WorkbenchGlobalMemory>
-  readonly 'workbenchInspector/lastReply': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, WorkbenchLastReply>
   readonly 'workbenchInspector/memory': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, WorkbenchMemory>
-  readonly 'workbenchInspector/memoryInjection': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, MemoryInjection | null>
   readonly 'workbenchInspector/overview': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, WorkbenchOverview>
   readonly 'workbenchInspector/saveGlobalMemory': TypertRemoteMethod<{ readonly 'content': string; readonly 'expected': string }, void>
   readonly 'workbenchInspector/saveProjectMemory': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'content': string; readonly 'expected': string }, void>

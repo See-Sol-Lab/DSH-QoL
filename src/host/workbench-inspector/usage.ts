@@ -12,8 +12,6 @@ export const USAGE_ORIGIN = 'https://platform.deepseek.com'
 export const USAGE_PAGE_URL = `${USAGE_ORIGIN}/usage`
 /** 接口路径前缀（相对 origin）。 */
 export const USAGE_API_PREFIX = '/api/v0/'
-/** 单次窗口请求的上限（天）；官方 35 天返回 INVALID_PARAM、31 天成功。 */
-export const USAGE_WINDOW_MAX_DAYS = 31
 /** 热力图覆盖的天数（含今天）。 */
 export const USAGE_HEATMAP_DAYS = 60
 /** 单个响应正文的上限（字符）；接口异常时绝不把整页 HTML 读进来。 */
@@ -54,12 +52,8 @@ export interface UsageRawResponse {
   readonly body: string | null
 }
 
-/** 页内脚本的返回值。 */
-export type UsageScriptResult =
-  /** 该 origin 的 localStorage 没有 userToken：没登录过或已登出。 */
-  | { readonly kind: 'no-token' }
-  /** 五个请求的原始响应（网络层失败的键缺省）。 */
-  | { readonly kind: 'responses'; readonly responses: Partial<Record<UsageRequestKey, UsageRawResponse>> }
+/** 一轮取数的原始响应（网络层失败的键缺省）。 */
+export type UsageResponses = Partial<Record<UsageRequestKey, UsageRawResponse>>
 
 /** 一次刷新的结论。 */
 export type UsageOutcome =
@@ -363,17 +357,16 @@ function windowView(amounts: readonly AmountBucket[], costs: readonly CostBucket
  * summary / amount30 / cost30 / amountPrev 任一缺失或格式不对 → unavailable；
  * amountToday 可缺（缺了就用 30 天桶里今天那一桶）。
  * @param plan - 生成这些响应的计划（切片窗口从它来）。
- * @param result - 页内脚本返回值。
+ * @param responses - 各请求的原始响应。
  * @returns 结论。
  */
-export function interpretUsageResult(plan: UsageFetchPlan, result: UsageScriptResult): UsageOutcome {
-  if (result.kind === 'no-token') return { kind: 'signed-out' }
+export function interpretUsageResult(plan: UsageFetchPlan, responses: UsageResponses): UsageOutcome {
   const verdicts = {
-    summary: judgeUsageResponse(result.responses.summary),
-    amount30: judgeUsageResponse(result.responses.amount30),
-    cost30: judgeUsageResponse(result.responses.cost30),
-    amountPrev: judgeUsageResponse(result.responses.amountPrev),
-    amountToday: judgeUsageResponse(result.responses.amountToday),
+    summary: judgeUsageResponse(responses.summary),
+    amount30: judgeUsageResponse(responses.amount30),
+    cost30: judgeUsageResponse(responses.cost30),
+    amountPrev: judgeUsageResponse(responses.amountPrev),
+    amountToday: judgeUsageResponse(responses.amountToday),
   }
   if (Object.values(verdicts).some(verdict => verdict.kind === 'signed-out')) return { kind: 'signed-out' }
   const required = [verdicts.summary, verdicts.amount30, verdicts.cost30, verdicts.amountPrev]
@@ -495,7 +488,7 @@ export async function fetchAccountUsage(
   }
 }
 
-async function requestAll(grant: { token: string; origin: string }, plan: UsageFetchPlan, locale: 'zh' | 'en', signal: AbortSignal): Promise<UsageScriptResult> {
+async function requestAll(grant: { token: string; origin: string }, plan: UsageFetchPlan, locale: 'zh' | 'en', signal: AbortSignal): Promise<UsageResponses> {
   // 官方 platformClientHeaders 的形状（dsh-deepseek-account），与官方查余额同一身份。
   const headers: Record<string, string> = {
     accept: 'application/json',
@@ -526,5 +519,5 @@ async function requestAll(grant: { token: string; origin: string }, plan: UsageF
       // 网络层失败或超时：该键缺省，由解析层按缺失判定。
     }
   }
-  return { kind: 'responses', responses }
+  return responses
 }

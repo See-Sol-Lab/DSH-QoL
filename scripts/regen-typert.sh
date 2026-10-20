@@ -27,6 +27,7 @@ restore() {
 trap restore EXIT
 
 cp "$Q"/*.ts $P/src/
+cp "$QOL"/src/host/home.ts $P/src/home.ts
 mkdir -p $P/src/skill-manager && cp "$Q"/skill-manager/*.ts $P/src/skill-manager/
 
 py -I -X utf8 - "$GUI" <<'PYEOF'
@@ -37,6 +38,7 @@ s = open(p, encoding='utf-8').read()
 a = "import AGENTS_PROJECT_ZH from '../../../assets/AGENTS.project.zh.md'\nimport AGENTS_PROJECT_EN from '../../../assets/AGENTS.project.en.md'"
 assert s.count(a) == 1
 s = s.replace(a, "const AGENTS_PROJECT_ZH = ''\nconst AGENTS_PROJECT_EN = ''")
+s = s.replace("from '../home.ts'", "from './home.ts'")
 s += "\nexport { SkillManager } from './skill-manager/index.ts'\n"
 open(p, 'w', encoding='utf-8', newline='\n').write(s)
 p = gui + '/packages/api/workbench-inspector/tsconfig.json'

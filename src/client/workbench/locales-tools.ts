@@ -22,7 +22,6 @@ export const zh = {
   'title.prAvailability': 'PR 可用性',
   'title.prExisting': 'PR 查重',
   'title.prCreate': '创建 PR',
-  'title.browser': '浏览器',
   // Expansion disclosure sections.
   'section.output': '完整输出',
   'section.arguments': '调用参数',
@@ -79,7 +78,6 @@ export const en = {
   'title.prAvailability': 'PR availability',
   'title.prExisting': 'PR lookup',
   'title.prCreate': 'Create PR',
-  'title.browser': 'Browser',
   'section.output': 'Full output',
   'section.arguments': 'Arguments',
   'summary.noOutput': '(no text output)',

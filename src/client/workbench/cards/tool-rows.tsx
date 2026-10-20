@@ -1,6 +1,6 @@
 /**
- * Keyed `tool.call.toolview` rows for the DeepSeekGUI coding tools and the
- * browser toolset (B5-P5). The rows replace the generic fallback for their
+ * Keyed `tool.call.toolview` rows for the DeepSeekGUI coding tools (B5-P5).
+ * The rows replace the generic fallback for their
  * keys: a collapsed one-line conclusion (state dot + title + summary or
  * error line), and an expansion that folds the full output and the call
  * arguments behind disclosure sections. When a follow-up needs human input —
@@ -543,37 +543,6 @@ export function GitPrToolRow({ block, toolName, t, submitInstruction }: ToolRowP
               onSent={closeForm}
             />
           )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-/** Row for the DeepSeekGUI browser tools: URL/selector summary + folded output. */
-export function BrowserToolRow({ block, toolName, t }: ToolRowProps) {
-  const [expanded, setExpanded] = useState(false)
-  const model = toolCardModel(block)
-  const body = isSettled(block) ? contentText(block) : null
-  const statusCopy = t(STATE_KEYS[model.state])
-  return (
-    <div data-tool={toolName} data-state={model.state}>
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-label={`${t('title.browser')}: ${model.summary} (${statusCopy})`}
-        onClick={() => setExpanded(value => !value)}
-        style={ROW_STYLE.header}
-      >
-        <span style={dotStyle(STATE_COLORS[model.state])} aria-hidden />
-        <span style={ROW_STYLE.title}>{t('title.browser')}</span>
-        <span style={model.errorSummary === null ? ROW_STYLE.summary : ROW_STYLE.error}>
-          {model.errorSummary ?? model.summary}
-        </span>
-        <span style={ROW_STYLE.chevron} aria-hidden>{expanded ? '▾' : '▸'}</span>
-      </button>
-      {expanded && (
-        <div>
-          <OutputAndArgs body={body} argsRaw={model.argsRaw} t={t} />
         </div>
       )}
     </div>

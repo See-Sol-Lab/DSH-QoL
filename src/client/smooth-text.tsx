@@ -99,10 +99,6 @@ class SmoothedTextDisplay {
     private readonly now: () => number = () => performance.now(),
   ) {}
 
-  /** Blocks currently tracked (bounded by `config.maxBlocks`). */
-  get size(): number {
-    return this.schedules.size
-  }
 
   /**
    * Advance one block's schedule and return the text to display now.
@@ -191,10 +187,6 @@ class SmoothedTextDisplay {
     this.schedules.delete(key)
   }
 
-  /** Drop every schedule (plugin dispose, disconnect). */
-  reset(): void {
-    this.schedules.clear()
-  }
 
   /** Insert with oldest-first eviction so a leak cannot grow without bound. */
   private track(key: string, schedule: BlockSchedule): void {

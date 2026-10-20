@@ -26,16 +26,15 @@
  * @module @see-sol-lab/deepseekgui-workbench/host/memory
  */
 
-import { closeSync, mkdirSync, openSync, readFileSync, readSync, renameSync, writeFileSync } from 'node:fs'
+import { closeSync, openSync, readSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 // A pure function from a type-only module: no Context augmentation crosses over.
 import { AREA_BEGIN, AREA_END, projectMemoryFileName } from '../workbench-inspector/types.ts'
-import { defaultDshHome } from '@deepseek-ai/dsh-home-paths'
+import { dshHome } from '../home.ts'
 // DSH-QoL：两份文案编进产物（esbuild text loader），不再随包带 assets 文件。
 import GUIDE_TEXT from '../../../assets/qol-guide.md'
 import MEMORY_CONTRACT_TEXT from '../../../assets/qol-memory-files.md'
-import { createHash } from 'node:crypto'
 
 /** Memory context section name owned by this plugin. */
 const MEMORY_SECTION_NAME = 'deepseekgui:memory'
@@ -172,82 +171,13 @@ export function memoryContract(): string {
   return MEMORY_CONTRACT_TEXT.trimEnd()
 }
 
-/** The complete injected section text for one window assembly. */
-export function buildMemorySectionText(files: MemoryFiles): string {
-  return captureMemorySection(files).text
-}
-
-/** One file's injection fact (Phase 2, 2026-10-05): what reached the request, not today's file. */
-export interface MemoryInjectionFact {
-  readonly path: string
-  readonly status: MemoryFileView['status']
-  readonly bytes: number
-  readonly chars: number
-  /** SHA-256 of the injected text: same length, different content still tell apart. */
-  readonly sha256: string
-  readonly autoArea?: 'included' | 'absent'
-}
-
-function factOf(view: MemoryFileView): MemoryInjectionFact {
-  let chars = 0
-  for (const _ of view.text) chars++
-  return {
-    path: view.path, status: view.status, bytes: Buffer.byteLength(view.text, 'utf8'), chars,
-    sha256: createHash('sha256').update(view.text, 'utf8').digest('hex'),
-    ...view.autoArea === undefined ? {} : { autoArea: view.autoArea },
-  }
-}
-
-/** Injection history kept per Session: the newest entry is the current load. */
-const INJECTION_HISTORY = 20
-
 /**
- * Read both files once and build the section text together with the facts of
- * what it carries, so the recorded facts and the injected text can never
- * describe two different reads.
+ * Read both memory files once and build the injected section text.
  * @param files - the two memory files.
- * @returns the section text and per-file facts.
+ * @returns the section text.
  */
-export function captureMemorySection(files: MemoryFiles): { text: string; global: MemoryInjectionFact; project: MemoryInjectionFact } {
-  const globalView = readMemoryFile(files.globalPath)
-  const projectView = readProjectMemoryFile(files.projectPath)
-  return { text: sectionTextOf(files, globalView, projectView), global: factOf(globalView), project: factOf(projectView) }
-}
-
-/**
- * Record the injection facts for one Session beside the DSH home
- * (`deepseekgui/memory-injections/<sessionId>.json`) so the Memory view can
- * show what this Session started with. Written once per loaded Session, at the
- * same moment the text is captured; a failure never blocks the assembly.
- * @param home - DSH home.
- * @param sessionId - the Session's id.
- * @param captured - facts from {@link captureMemorySection}.
- */
-export function recordMemoryInjection(
-  home: string,
-  sessionId: string,
-  captured: { global: MemoryInjectionFact; project: MemoryInjectionFact },
-): void {
-  if (!/^[A-Za-z0-9_-]{1,128}$/u.test(sessionId)) return
-  try {
-    const dir = join(home, 'deepseekgui', 'memory-injections')
-    mkdirSync(dir, { recursive: true })
-    const path = join(dir, `${sessionId}.json`)
-    // Append, never overwrite: a reopened Session gets its own entry beside the earlier loads.
-    let entries: unknown[] = []
-    try {
-      const previous: unknown = JSON.parse(readFileSync(path, 'utf8'))
-      if (typeof previous === 'object' && previous !== null && 'entries' in previous && Array.isArray(previous.entries)) entries = previous.entries
-    } catch {
-      entries = []
-    }
-    entries.push({ at: new Date().toISOString(), capBytes: MEMORY_FILE_CAP, global: captured.global, project: captured.project })
-    const temp = `${path}.${String(Date.now())}-${Math.random().toString(36).slice(2)}.tmp`
-    writeFileSync(temp, `${JSON.stringify({ sessionId, entries: entries.slice(-INJECTION_HISTORY) }, null, 2)}\n`, 'utf8')
-    renameSync(temp, path)
-  } catch {
-    // The record is a convenience for the Memory view; the injection itself already happened.
-  }
+export function memorySectionText(files: MemoryFiles): string {
+  return sectionTextOf(files, readMemoryFile(files.globalPath), readProjectMemoryFile(files.projectPath))
 }
 
 function sectionTextOf(files: MemoryFiles, globalView: MemoryFileView, projectView: MemoryFileView): string {
@@ -294,11 +224,6 @@ export type MemoryAssembleContext = {
 }
 
 /** Read DSH_HOME through the untyped env record (client env ambient types narrow process.env). */
-function dshHomeOf(env: Record<string, string | undefined> = process.env as Record<string, string | undefined>): string | undefined {
-  const home = env.DSH_HOME
-  // DSH-QoL：官方桌面端不一定设置 DSH_HOME；没有时用官方默认位置（~/.dsh）。
-  return home === undefined || home === '' ? defaultDshHome() : home
-}
 
 /**
  * Register the product guide and the memory context in the plugin scope.
@@ -323,17 +248,14 @@ export function registerMemoryContext(ctx: Context): void {
     const disposeVariable = systemPrompt.variable('deepseekgui_memory', (context) => {
       // A bare assemble (tests/diagnostics) has no agent; and without a home
       // or a session cwd there is nothing to anchor memory to.
-      const home = dshHomeOf()
+      const home = dshHome()
       const session = context.agent?.session
       const cwd = session?.header?.cwd
-      if (home === undefined || cwd === undefined || session === undefined) return ''
+      if (cwd === undefined || session === undefined) return ''
       let text = captured.get(session)
       if (text === undefined) {
-        const capture = captureMemorySection(memoryFilesOf(home, cwd))
-        text = capture.text
+        text = memorySectionText(memoryFilesOf(home, cwd))
         captured.set(session, text)
-        const id = session.header?.id
-        if (id !== undefined) recordMemoryInjection(home, id, capture)
       }
       return text
     })

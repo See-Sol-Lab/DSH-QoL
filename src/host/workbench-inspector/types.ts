@@ -67,17 +67,6 @@ export interface WorkbenchWorktree extends WorktreeInfo {
   changedPaths: string[]
 }
 
-/**
- * The newest assistant reply of a Session, read for the desktop's feedback
- * triage (2026-09-11 manual test #15): the desktop prompts a hidden session
- * and polls this until the turn has ended.
- */
-export interface WorkbenchLastReply {
-  /** Plain text of the newest assistant message (text blocks joined); null before the first reply. */
-  readonly text: string | null
-  /** Whether a `turn/end` follows that message, i.e. the reply is complete. */
-  readonly complete: boolean
-}
 
 /** The interface language a Markdown export is written in (B8-P1). */
 export type WorkbenchExportLanguage = 'zh' | 'en'
@@ -107,19 +96,6 @@ export interface WorkbenchOverview {
   worktrees: WorkbenchWorktree[]
 }
 
-/**
- * What cleaning a folder's sandbox marks did (DeepSeekGUI 2026-09-29): the
- * Windows ACL sandbox's grant, deny, and Low label, which make programs
- * started from the folder run at Low integrity. `cleaned` — gone from `root`;
- * `clean` — no folder from the chosen one up carries any; `busy` — a confined
- * command is running there now; `unsupported` — this Harness does not confine
- * with Windows ACLs.
- */
-export interface WorkbenchSandboxClean {
-  readonly status: 'cleaned' | 'clean' | 'busy' | 'unsupported'
-  /** The folder the marks were on: the chosen one, or the ancestor they are inherited from. */
-  readonly root: string
-}
 
 
 /**
@@ -129,36 +105,6 @@ export interface WorkbenchSandboxClean {
 export const AREA_BEGIN = '<!-- deepseekgui:archive-notes:begin -->'
 export const AREA_END = '<!-- deepseekgui:archive-notes:end -->'
 
-/** 一个记忆文件在一次组装中被带入时的事实。 */
-export interface MemoryInjectionFile {
-  readonly path: string
-  readonly status: 'present' | 'absent' | 'empty' | 'truncated' | 'unreadable'
-  /** 实际带入的 UTF-8 字节数与字符数（code points）。 */
-  readonly bytes: number
-  readonly chars: number
-  /** 实际带入文本的 SHA-256：同样长度、不同内容也分得开。 */
-  readonly sha256: string
-  /** 自动整理区是否整段带入（项目记忆超出上限时，它优先于人写内容的尾部）。 */
-  readonly autoArea?: 'included' | 'absent'
-}
-
-/** 一次加载时带入的记忆（会话第一次组装请求，或重启后重新加载时各记一条）。 */
-export interface MemoryInjectionEntry {
-  readonly at: string
-  /** 每个文件的读取上限（字节）。 */
-  readonly capBytes: number
-  readonly global: MemoryInjectionFile
-  readonly project: MemoryInjectionFile
-}
-
-/**
- * 一段会话每次加载时带入了什么（`<DSH_HOME>/deepseekgui/memory-injections/<sessionId>.json`）。
- * 每次加载追加一条（保留最近 20 条），不覆盖历史；最后一条就是当前这次加载在用的那一份。
- */
-export interface MemoryInjection {
-  readonly sessionId: string
-  readonly entries: readonly MemoryInjectionEntry[]
-}
 
 // DSH-QoL：技能库的类型一并从 @see-sol-lab/dsh-qol/types 导出（远程接口描述按这个路径引用）。
 // ---- 用量与余额（移植自 DeepSeekGUI usage-service） ----

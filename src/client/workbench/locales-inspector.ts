@@ -79,7 +79,6 @@ export const zh = {
   'memory.createAgents': '为这个项目生成 AGENTS.md',
   'memory.createAgentsTitle': '把一份通用的项目协作指引写进项目文件夹；已有 AGENTS.md 时不会覆盖。',
   'memory.agentsExists': '项目已有 AGENTS.md。',
-  'memory.openAgents': '打开 AGENTS.md',
   // Chrome for the official MarkdownText primitive the Memory view renders with.
   'markdown.copy': '复制',
   'markdown.copied': '已复制',
@@ -154,7 +153,6 @@ export const en = {
   'memory.createAgents': 'Generate AGENTS.md for this project',
   'memory.createAgentsTitle': 'Writes a generic project collaboration guide into the project folder; an existing AGENTS.md is never overwritten.',
   'memory.agentsExists': 'This project already has an AGENTS.md.',
-  'memory.openAgents': 'Open AGENTS.md',
   'markdown.copy': 'Copy',
   'markdown.copied': 'Copied',
   'markdown.footnotes': 'Footnotes',

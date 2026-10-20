@@ -1,16 +1,7 @@
-/** `deepseekgui.workbench` namespace dictionaries: desktop-action controls. */
+/** `dsh.qol.workbench` namespace dictionaries: archived sessions, session delete and Markdown export. */
 
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
-  'actions.bridge.error': '无法连接 DeepSeekGUI 桌面控制通道',
-  'status.idle': '未运行',
-  'status.stopping': '正在停止',
-  'status.starting': '正在启动',
-  'status.switching': '正在切换',
-  'status.recovering': '正在恢复',
-  'status.running': '运行中',
-  'status.recovered': '已恢复',
-  'status.failed': '启动失败',
   'sessionDelete.menu': '删除会话',
   'sessionDelete.title': '删除这个会话？',
   'sessionDelete.desc': '「{title}」的对话记录和日志会从磁盘上删除。',
@@ -30,15 +21,6 @@ export const zh = {
   'sessionExport.pending': '正在生成…',
   'sessionExport.savedTo': '已下载：{path}',
   // Settings → 通用 → 清理沙箱标记（住户 2026-09-29）。
-  'sandboxMarks.title': '清理沙箱标记',
-  'sandboxMarks.description': 'DeepSeek 在沙箱里改过的文件夹会带上一组权限标记，标记还在时，从这个文件夹启动的部分程序（如 Electron 应用）无法运行。新版在命令结束后自动收回标记；旧版本留下的或异常退出后残留的标记，可以在这里选中文件夹清理。',
-  'sandboxMarks.action': '选择文件夹…',
-  'sandboxMarks.pending': '正在清理，文件很多的文件夹需要几十秒。',
-  'sandboxMarks.cleaned': '已清理：',
-  'sandboxMarks.cleanedInherited': '标记来自上层文件夹，已清理：',
-  'sandboxMarks.clean': '这个文件夹没有沙箱标记：',
-  'sandboxMarks.busy': '有命令正在这个文件夹里运行，结束后再清理：',
-  'sandboxMarks.unsupported': '当前没有使用 Windows 沙箱，无需清理。',
   // Settings → 已归档的会话（住户 2026-09-23 要回来的设置页）。
   'archived.nav': '已归档的会话',
   'archived.hint': '归档的会话不显示在侧栏分组里，对话记录和所在工作区都保留。',
@@ -54,15 +36,6 @@ export type WorkbenchKey = keyof typeof zh
 
 /** English dictionary, checked complete against the zh key set. */
 export const en = {
-  'actions.bridge.error': 'Cannot reach the DeepSeekGUI desktop control channel',
-  'status.idle': 'Not running',
-  'status.stopping': 'Stopping',
-  'status.starting': 'Starting',
-  'status.switching': 'Switching',
-  'status.recovering': 'Recovering',
-  'status.running': 'Running',
-  'status.recovered': 'Recovered',
-  'status.failed': 'Start failed',
   'sessionDelete.menu': 'Delete session',
   'sessionDelete.title': 'Delete this session?',
   'sessionDelete.desc': 'The conversation and logs of “{title}” are erased from disk.',
@@ -80,15 +53,6 @@ export const en = {
   'sessionExport.done': 'Done',
   'sessionExport.pending': 'Generating…',
   'sessionExport.savedTo': 'Downloaded: {path}',
-  'sandboxMarks.title': 'Clean sandbox marks',
-  'sandboxMarks.description': 'Folders DeepSeek changed inside the sandbox carry a set of permission marks; while they remain, some programs started from the folder (Electron apps, for example) cannot run. Current versions take the marks back when commands finish; marks left by older versions or after an unexpected exit can be cleaned here by choosing the folder.',
-  'sandboxMarks.action': 'Choose folder…',
-  'sandboxMarks.pending': 'Cleaning; folders with many files take tens of seconds.',
-  'sandboxMarks.cleaned': 'Cleaned: ',
-  'sandboxMarks.cleanedInherited': 'The marks came from a parent folder, now cleaned: ',
-  'sandboxMarks.clean': 'This folder has no sandbox marks: ',
-  'sandboxMarks.busy': 'A command is running in this folder; clean it after the command ends: ',
-  'sandboxMarks.unsupported': 'The Windows sandbox is not in use; nothing to clean.',
   'archived.nav': 'Archived sessions',
   'archived.hint': 'Archived sessions are hidden from the sidebar groups; their conversation and workspace are kept.',
   'archived.empty': 'No sessions are archived yet. Choose “Archive” in a session’s sidebar menu to put it here.',

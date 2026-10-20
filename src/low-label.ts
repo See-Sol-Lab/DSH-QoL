@@ -81,29 +81,47 @@ export interface LowLabelResult {
   error: string | null
 }
 
-const POWERSHELL = join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+/** Windows PowerShell 5.1（系统自带，不依赖用户装的 pwsh）。 */
+export const POWERSHELL = join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
 
-function scriptPath(): string {
-  const path = join(tmpdir(), 'dsh-qol-revoke-low-label.ps1')
-  writeFileSync(path, SCRIPT, 'utf8')
-  return path
+/**
+ * 把随包脚本写到临时目录，返回 PowerShell 的启动参数。
+ * @param name - 临时文件名。
+ * @param text - 脚本内容。
+ * @param args - 脚本参数。
+ * @returns 传给 execFile 的参数。
+ */
+export function psArgs(name: string, text: string, args: readonly string[]): string[] {
+  const script = join(tmpdir(), name)
+  writeFileSync(script, text, 'utf8')
+  return ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, ...args]
 }
 
-function argsFor(script: string, root: string, backupDir: string): string[] {
+/**
+ * 脚本输出的最后一行 JSON；解析不了时给出错误说明。
+ * @param stdout - 脚本输出。
+ * @param failure - 进程层的失败（超时、退出码）。
+ * @returns 解析结果，或错误说明。
+ */
+export function lastJsonLine<T>(stdout: string, failure?: unknown): { value: T } | { error: string } {
+  const line = stdout.trim().split(/\r?\n/u).at(-1) ?? ''
+  try {
+    return { value: JSON.parse(line) as T }
+  } catch {
+    return { error: failure instanceof Error ? failure.message : (line === '' ? 'no output' : line) }
+  }
+}
+
+function argsFor(root: string, backupDir: string): string[] {
   const stamp = new Date().toISOString().replace(/[:.]/gu, '-')
   const name = root.replace(/[\\/:]+/gu, '_').replace(/^_+|_+$/gu, '')
-  return ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script,
-    '-Root', root, '-Backup', join(backupDir, `${name}-${stamp}.txt`)]
+  return psArgs('dsh-qol-revoke-low-label.ps1', SCRIPT, ['-Root', root, '-Backup', join(backupDir, `${name}-${stamp}.txt`)])
 }
 
 function parse(root: string, stdout: string, failure?: unknown): LowLabelResult {
-  const line = stdout.trim().split(/\r?\n/u).at(-1) ?? ''
-  try {
-    return JSON.parse(line) as LowLabelResult
-  } catch {
-    const error = failure instanceof Error ? failure.message : (line === '' ? 'no output' : line)
-    return { root, marked: false, removedSids: [], denyRemoved: 0, labelReset: false, backup: null, error }
-  }
+  const parsed = lastJsonLine<LowLabelResult>(stdout, failure)
+  return 'value' in parsed ? parsed.value
+    : { root, marked: false, removedSids: [], denyRemoved: 0, labelReset: false, backup: null, error: parsed.error }
 }
 
 /** 把这一轮结果写进 `<home>/deepseekgui/low-label-cleanup.json`，方便查问题。 */
@@ -122,12 +140,11 @@ function record(home: string, reason: string, results: LowLabelResult[]): void {
  * @returns 每个工作区的结果。
  */
 export async function revokeLowLabels(roots: readonly string[], home: string): Promise<LowLabelResult[]> {
-  const script = scriptPath()
   const backupDir = join(home, 'deepseekgui', 'acl-backups')
   const results: LowLabelResult[] = []
   for (const root of roots) {
     results.push(await new Promise<LowLabelResult>((resolve) => {
-      execFile(POWERSHELL, argsFor(script, root, backupDir), { timeout: 10 * 60_000, windowsHide: true }, (error, stdout) => {
+      execFile(POWERSHELL, argsFor(root, backupDir), { timeout: 10 * 60_000, windowsHide: true }, (error, stdout) => {
         resolve(parse(root, String(stdout), error ?? undefined))
       })
     }))
@@ -143,11 +160,10 @@ export async function revokeLowLabels(roots: readonly string[], home: string): P
  * @returns 每个工作区的结果。
  */
 export function revokeLowLabelsSync(roots: readonly string[], home: string): LowLabelResult[] {
-  const script = scriptPath()
   const backupDir = join(home, 'deepseekgui', 'acl-backups')
   const results = roots.map((root) => {
     try {
-      return parse(root, execFileSync(POWERSHELL, argsFor(script, root, backupDir), { timeout: 2 * 60_000, windowsHide: true, encoding: 'utf8' }))
+      return parse(root, execFileSync(POWERSHELL, argsFor(root, backupDir), { timeout: 2 * 60_000, windowsHide: true, encoding: 'utf8' }))
     } catch (error) {
       return parse(root, '', error)
     }

@@ -24,7 +24,7 @@ import type {} from '@deepseek-ai/dsh-system-prompt'
 // Type-only: the ctx.llm merge.
 import type {} from '@deepseek-ai/dsh-llm'
 import { registerModelSight } from './host/model-sight.ts'
-import { defaultDshHome } from '@deepseek-ai/dsh-home-paths'
+import { dshHome } from './host/home.ts'
 import { collectRoots, revokeLowLabels, revokeLowLabelsSync } from './low-label.ts'
 import { fixWorkspaceAccess } from './workspace-access.ts'
 import { EOL } from 'node:os'
@@ -164,7 +164,7 @@ function applyWorkspaceAccess(ctx: Context, config: Config): void {
       })
     }
     const registered = (): string[] => scoped.workspaceRegistry.list().map(workspace => workspace.path)
-    check(collectRoots(home, registered()))
+    check(registered())
     const timer = setInterval(() => { try { check(registered()) } catch { /* 注册表已卸载 */ } }, 5_000)
     scoped.effect(() => () => { clearInterval(timer) }, 'dsh-qol: workspace access watch')
   })
@@ -175,10 +175,6 @@ interface ExitState { enabled: () => boolean; roots: () => readonly string[]; ho
 const EXIT_STATE = Symbol.for('dsh-qol.low-label.exit')
 type GlobalWithExit = typeof globalThis & { [EXIT_STATE]?: ExitState }
 
-function dshHome(): string {
-  const home = process.env.DSH_HOME
-  return home === undefined || home === '' ? defaultDshHome() : home
-}
 
 /**
  * Low 标签撤销：Host 启动时清一遍已登记的工作区；Host 进程真正退出时再清一遍。

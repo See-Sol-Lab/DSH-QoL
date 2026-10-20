@@ -1,13 +1,13 @@
 /** Workbench queries（DSH-QoL：官方桌面端里不含删除会话）. */
 import type { Context } from '@deepseek-ai/cordis'
-import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {} from '@deepseek-ai/dsh-session-query'
 import type {} from '@deepseek-ai/dsh-fs'
 import type { FsTarget } from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-git'
 import type { DiffResult, DiffScope } from '@deepseek-ai/dsh-git/types'
 import Schema from '@deepseek-ai/schemastery'
-import { defaultDshHome } from '@deepseek-ai/dsh-home-paths'
+import { dshHome } from '../home.ts'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { renderSessionMarkdown, untitledSessionTitle } from './session-markdown.ts'
 import { fetchAccountUsage, type UsageCredentials } from './usage.ts'
@@ -19,7 +19,7 @@ import type {} from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-workspace'
 // Type-only: the api-session/removed event.
 import type {} from '@deepseek-ai/dsh-api-session-controller'
-import { projectMemoryFileName, type MemoryInjection, type WorkbenchExportLanguage, type WorkbenchExportMarkdown, type WorkbenchFileText, type WorkbenchGlobalMemory, type WorkbenchLastReply, type WorkbenchMemory, type WorkbenchSeedLocale, type WorkbenchOverview, type WorkbenchRepository, type WorkbenchSandboxClean, type WorkbenchUsage, type WorkbenchWorktree } from './types.ts'
+import { projectMemoryFileName, type WorkbenchExportLanguage, type WorkbenchExportMarkdown, type WorkbenchFileText, type WorkbenchGlobalMemory, type WorkbenchMemory, type WorkbenchSeedLocale, type WorkbenchOverview, type WorkbenchRepository, type WorkbenchUsage, type WorkbenchWorktree } from './types.ts'
 
 export type * from './types.ts'
 export { projectMemoryFileName } from './types.ts'
@@ -82,12 +82,6 @@ export class WorkbenchInspector extends TypertRemoteService {
    */
   constructor(ctx: Context, private readonly config: Config) {
     super(ctx, 'workbenchInspector', { namespace: 'workbenchInspector' })
-    // The sandbox provider is optional and read structurally: only the local
-    // provider on Windows can clean ACL marks (cleanSandboxMarks).
-    ctx.inject(['sandbox'], (sandboxCtx) => {
-      this.sandbox = sandboxCtx.get('sandbox')
-      sandboxCtx.effect(() => () => { this.sandbox = undefined })
-    })
     // DSH-QoL：删除已归档会话要看归档集合与当前加载的会话；都按可选依赖读，缺了就拒绝删除。
     ctx.inject(['workspaceRegistry'], (registryCtx) => {
       this.registry = registryCtx.workspaceRegistry
@@ -133,67 +127,6 @@ export class WorkbenchInspector extends TypertRemoteService {
   private registry: Context['workspaceRegistry'] | undefined
   /** DSH-QoL：Host 里当前加载着的会话。 */
   private liveSessions: { get(id: SessionId): unknown } | undefined
-
-  /**
-   * 这段会话每次加载时带入了哪些记忆（见 MemoryInjection；最后一条是当前这次加载在用的）。
-   * 没有记录就是 null：会话还没发过第一条，或是本功能之前的老会话。
-   * @param sessionId - 会话。
-   * @param signal - Request cancellation.
-   * @returns 带入事实，或 null。
-   */
-  @Remote
-  memoryInjection(sessionId: SessionId, signal: AbortSignal): Promise<MemoryInjection | null> {
-    return Promise.resolve().then(() => {
-      signal.throwIfAborted()
-      return this.readMemoryInjection(sessionId)
-    })
-  }
-
-  /** The recorded memory injection for one Session, read synchronously; see {@link memoryInjection}. */
-  private readMemoryInjection(sessionId: SessionId): MemoryInjection | null {
-    const home = dshHome()
-    if (home === undefined || !/^[A-Za-z0-9_-]{1,128}$/u.test(sessionId)) return null
-    let raw: unknown
-    try {
-      raw = JSON.parse(readFileSync(join(home, 'deepseekgui', 'memory-injections', `${sessionId}.json`), 'utf8'))
-    } catch {
-      return null
-    }
-    if (typeof raw !== 'object' || raw === null || !('entries' in raw) || !Array.isArray(raw.entries)) return null
-    return { sessionId, entries: raw.entries }
-  }
-
-  /** The mounted sandbox provider, when there is one. */
-  private sandbox: unknown
-
-  /**
-   * Remove the Windows ACL sandbox's marks from a folder the desktop user
-   * chose (DeepSeekGUI 2026-09-29): its grant, the delete deny, and the Low
-   * label that make programs started there run at Low integrity. The sandbox
-   * provider picks the folder that actually carries them (the chosen one or
-   * the ancestor they are inherited from) and refuses while a confined
-   * command runs there.
-   * @param path - Absolute folder path from the desktop's folder dialog.
-   * @param signal - Request cancellation.
-   * @returns what was done, and on which folder.
-   */
-  @Remote
-  async cleanSandboxMarks(path: string, signal: AbortSignal): Promise<WorkbenchSandboxClean> {
-    signal.throwIfAborted()
-    const sandbox = this.sandbox
-    if (typeof sandbox !== 'object' || sandbox === null || !('cleanWorkspaceMarks' in sandbox) || typeof sandbox.cleanWorkspaceMarks !== 'function') {
-      return { status: 'unsupported', root: path }
-    }
-    const result: unknown = await Promise.resolve(Reflect.apply(sandbox.cleanWorkspaceMarks, sandbox, [path]))
-    if (typeof result !== 'object' || result === null || !('status' in result) || !('root' in result) || typeof result.root !== 'string') {
-      throw new Error('cleanSandboxMarks: the sandbox provider answered an unexpected shape')
-    }
-    const { status, root } = result
-    if (status !== 'cleaned' && status !== 'clean' && status !== 'busy' && status !== 'unsupported') {
-      throw new Error('cleanSandboxMarks: the sandbox provider answered an unexpected status')
-    }
-    return { status, root }
-  }
 
   private async cwd(sessionId: SessionId, signal: AbortSignal): Promise<string> {
     using observation = await this.ctx.sessionQuery.observeSession(sessionId, { signal, projectionMode: 'none' })
@@ -290,7 +223,7 @@ export class WorkbenchInspector extends TypertRemoteService {
   @Remote
   async globalMemory(signal: AbortSignal): Promise<WorkbenchGlobalMemory> {
     signal.throwIfAborted()
-    const home = requiredHome()
+    const home = dshHome()
     return { home, text: readMemoryText(join(home, 'memory.md')) }
   }
 
@@ -304,7 +237,7 @@ export class WorkbenchInspector extends TypertRemoteService {
   @Remote
   async saveGlobalMemory(content: string, expected: string, signal: AbortSignal): Promise<void> {
     signal.throwIfAborted()
-    const path = join(requiredHome(), 'memory.md')
+    const path = join(dshHome(), 'memory.md')
     if (readMemoryText(path) !== expected) {
       throw new RemoteError('workbench/memory-changed', 'The global memory file changed. Reopen it before saving.', { path })
     }
@@ -385,31 +318,6 @@ export class WorkbenchInspector extends TypertRemoteService {
   }
 
   /**
-   * The newest assistant reply of a Session and whether its turn has ended.
-   * The desktop's feedback triage (#15) prompts a hidden session and polls
-   * this; reading the log through the query service keeps it off the
-   * streaming follow channel the desktop has no client for.
-   * @param sessionId - the session to read.
-   * @param signal - Request cancellation.
-   * @returns the reply text (text blocks joined) and its completeness.
-   */
-  @Remote
-  async lastReply(sessionId: SessionId, signal: AbortSignal): Promise<WorkbenchLastReply> {
-    signal.throwIfAborted()
-    using observation = await this.ctx.sessionQuery.observeSession(sessionId, { signal, projectionMode: 'none' })
-    const events = observation.events
-    const reply = events.findLast((event): event is SessionEvent<'assistant/message'> => event.type === 'assistant/message')
-    if (reply === undefined) return { text: null, complete: false }
-    const ended = events.findLast(event => event.type === 'turn/end')
-    const complete = ended !== undefined && ended.seq > reply.seq
-    const text = reply.data.message.content
-      .flatMap(block => (block.type === 'text' ? [block.text] : []))
-      .join('\n')
-      .trim()
-    return { text: text === '' ? null : text, complete }
-  }
-
-  /**
    * Render one Session as a human-readable Markdown document (B8-P1). The
    * log is read through the query service — a running turn's newest events
    * may not be on disk yet — and folded by the pure renderer; no model is
@@ -473,7 +381,7 @@ export class WorkbenchInspector extends TypertRemoteService {
     if (this.liveSessions === undefined || this.liveSessions.get(sessionId) !== undefined) {
       throw new RemoteError('workbench/session-busy', 'the session is still loaded; restart the app and try again', {})
     }
-    const home = requiredHome()
+    const home = dshHome()
     const directory = findSessionDirectory(join(home, 'sessions'), sessionId)
     // 先从官方归档集合里拿掉（官方没有「忘掉某个 id」，取消归档是唯一的写法）；失败不挡删除。
     try { await registry.unarchiveSession(sessionId) } catch { /* 留在归档集合里也无害：读不到会话就跳过 */ }
@@ -525,17 +433,7 @@ export class WorkbenchInspector extends TypertRemoteService {
 }
 
 /** DSH_HOME（宿主进程的环境变量）。 */
-function dshHome(): string | undefined {
-  const home = process.env.DSH_HOME
-  // DSH-QoL：官方桌面端不一定设置 DSH_HOME；没有时用官方默认位置（~/.dsh）。
-  return home === undefined || home === '' ? defaultDshHome() : home
-}
 
-function requiredHome(): string {
-  const home = dshHome()
-  if (home === undefined) throw new Error('no DSH home is available')
-  return home
-}
 
 /**
  * DSH-QoL：在官方会话存储里找到一个会话的目录：`<root>/<工作区编码>/<sessionId>/`。
