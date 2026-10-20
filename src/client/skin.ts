@@ -91,17 +91,18 @@ ${DARK} #${LAYER_ID} > [data-sea="light"] { opacity: 0; }
   background: transparent !important;
 }
 
-/* 输入框下面的统计行：官方是透明的，长回复滚到它后面会透字。GUI 做法：整行变成
-   一个半透明胶囊（官方新版每个控件带 data-composer-stat，选它们的那一行）。 */
-:has(> [data-composer-stat]) {
+/* 输入框下面的统计行（官方 [data-composer-dock]：统计小块 + 上下文圆环）是透明的，
+   长回复滚到它后面会透字。GUI 做法：整行收成一个半透明胶囊，居中。 */
+[data-composer-dock] {
   width: fit-content;
   margin-inline: auto;
+  margin-top: 4px;
   padding: 3px 14px;
   border-radius: 999px;
   background: var(--dsw-alias-bg-overlay);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
-${DARK} :has(> [data-composer-stat]) {
+${DARK} [data-composer-dock] {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 ${SIDEBAR} [role="treeitem"],
