@@ -10,6 +10,7 @@
   <img src="https://img.shields.io/badge/DeepSeek%20Harness-0.2.1-4d6bfe?style=flat-square" alt="DeepSeek Harness 0.2.1">
   <img src="https://img.shields.io/badge/Platform-Windows-0078d4?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/DSH-Plugin-8b5cf6?style=flat-square" alt="DSH plugin">
+  <a href="https://doi.org/10.5281/zenodo.23600993"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.23600993-4a6fa5?style=flat-square" alt="DOI 10.5281/zenodo.23600993"></a>
 </p>
 
 A plugin for the official DeepSeek Harness (DSH) desktop app. The name comes from the "Quality of Life" updates in games: no big new gameplay, just the small things done right.
