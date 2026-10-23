@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/media/banner.png" alt="DSH QoL Pack banner"></p>
+
 <h1 align="center">DSH 生活质量包</h1>
 
 <p align="center"><strong>中文</strong> · <a href="README.en.md">English</a></p>
@@ -9,8 +11,6 @@
   <img src="https://img.shields.io/badge/Platform-Windows-0078d4?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/DSH-Plugin-8b5cf6?style=flat-square" alt="DSH plugin">
 </p>
-
-<!-- Hero image will be added when ready. -->
 
 给 DeepSeek Harness（DSH）官方桌面端补上一批体验细节的插件。名字借自游戏里的 Quality of Life （生活质量）更新：不加大玩法，把细节补齐。
 
