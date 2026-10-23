@@ -1,24 +1,22 @@
 # DSH 生活质量包（DSH QoL Pack）
 
-给 DeepSeek Harness（DSH）官方桌面端补上一批体验细节的插件。名字借自游戏里的 Quality of Life 更新：不加大玩法，把细节补齐。
+给 DeepSeek Harness（DSH）官方桌面端补上一批体验细节的插件。名字借自游戏里的 Quality of Life （生活质量）更新：不加大玩法，把细节补齐。
 
-本插件是非官方社区作品，与 DeepSeek 无隶属关系。
+本插件是非官方的社区作品，与 DeepSeek及深度求索 无隶属关系。
 
 ## 来历与理念
 
-本插件源自 [DeepSeekGUI](https://github.com/See-Sol-Lab/DeepSeekGUI)。DeepSeekGUI 是基于 DSH 的社区桌面工作台：一个独立的桌面应用，在 DSH 之上加了本地 Git 工作台、记忆、技能库、用量统计、系统通知和深海玻璃皮肤等功能，每个版本都完整合并官方更新。
+本插件源自 [DeepSeekGUI](https://github.com/See-Sol-Lab/DeepSeekGUI)。DeepSeekGUI 是基于DSH开发的社区桌面工作台：一个独立的桌面应用，在 DSH 之上加了本地 Git 工作台、记忆、技能库、用量统计、系统通知和深海玻璃皮肤等功能，每个版本都完整合并官方更新。
 
 官方推出自己的桌面端以后，官方桌面端的更新方向、开发理念与 DeepSeekGUI 有不小的分歧，而 DeepSeekGUI 由一个人维护，每次整体合并官方更新、再把自己的改动接回去，工作量越来越大，也越来越难跟上。所以 DeepSeekGUI 调整了方向：
 
 - **不再整体合并官方更新**。DeepSeekGUI 只做基础维护。
-- **把官方还没有的功能做成这个插件**，装进官方桌面端。DeepSeekGUI 的老用户换到官方桌面端、装上生活质量包，就能得到和 DeepSeekGUI 相近的使用体验。
+- **把官方还没有的功能做成这个插件**，装进官方桌面端。DeepSeekGUI 的老用户换到官方桌面端、装上生活质量包，就能得到和 DeepSeekGUI 相近的使用体验。GUI的老用户将在rc3合并更新中直接无缝过渡到官方桌面端+QoL质量包。使用体验保持不变。
 - 插件只改官方开放给插件的部分，不改官方代码，所以官方更新以后插件照常可用，维护量小得多。
 
 如果你是第一次接触这个插件，下面的功能介绍会逐项说明它从哪些方面改善了官方桌面端的使用体验。
 
 ## 功能一览
-
-*装好后，官方「插件」页里的生活质量包，7 个组件都在运行。*
 
 | 功能 | 在哪里 | 默认 |
 |---|---|---|
@@ -38,6 +36,7 @@
 | [看图提示](#其他) | 给助手的上下文 | 开 |
 
 [![装好后的插件页：7 个组件都在运行](docs/media/plugin-page.webp)](docs/media/plugin-page.webp)
+*装好后，官方「插件」页里的生活质量包，7 个组件都在运行。*
 
 ## 功能介绍
 
@@ -142,4 +141,4 @@ dsh plugin --profile desktop add file:<本仓库路径>
 
 ## 许可
 
-[MIT](LICENSE)。部分代码源自 DeepSeek Harness（MIT）。
+[MIT](LICENSE)。部分代码源自 DeepSeek Harness（MIT）。引用或复用时请注明来源。
