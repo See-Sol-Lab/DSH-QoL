@@ -18,8 +18,6 @@
 
 ## 功能一览
 
-[![装好后的插件页：7 个组件都在运行](docs/media/plugin-page.webp)](docs/media/plugin-page.webp)
-
 *装好后，官方「插件」页里的生活质量包，7 个组件都在运行。*
 
 | 功能 | 在哪里 | 默认 |
@@ -38,6 +36,8 @@
 | [会话导出为 Markdown](#其他) | 会话菜单 | 开 |
 | [系统通知](#其他) | Windows 系统通知 | 开 |
 | [看图提示](#其他) | 给助手的上下文 | 开 |
+
+[![装好后的插件页：7 个组件都在运行](docs/media/plugin-page.webp)](docs/media/plugin-page.webp)
 
 ## 功能介绍
 
