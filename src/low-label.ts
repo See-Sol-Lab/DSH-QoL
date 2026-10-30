@@ -4,7 +4,7 @@
  * 官方 sandbox-local 在一次运行里把「这个工作区已授权」记在内存里，运行期间撤掉会让
  * 后续命令报权限错误。所以只在官方不记得的时候撤：Host 启动时（沙箱还没跑命令），
  * 以及 Host 进程真正退出时（process 'exit'，不是插件卸载——插件被关掉或重装时 Host
- * 还在跑）。每个工作区一次 Windows PowerShell 子进程，见 assets/revoke-low-label.ps1。
+ * 还在跑）。所有工作区共用一次 Windows PowerShell 子进程，见 assets/revoke-low-label.ps1。
  */
 
 import { execFile, execFileSync } from 'node:child_process'
@@ -112,16 +112,27 @@ export function lastJsonLine<T>(stdout: string, failure?: unknown): { value: T }
   }
 }
 
-function argsFor(root: string, backupDir: string): string[] {
-  const stamp = new Date().toISOString().replace(/[:.]/gu, '-')
-  const name = root.replace(/[\\/:]+/gu, '_').replace(/^_+|_+$/gu, '')
-  return psArgs('dsh-qol-revoke-low-label.ps1', SCRIPT, ['-Root', root, '-Backup', join(backupDir, `${name}-${stamp}.txt`)])
+function argsFor(roots: readonly string[], home: string): string[] {
+  return psArgs('dsh-qol-revoke-low-label.ps1', SCRIPT, ['-BackupDir', join(home, 'deepseekgui', 'acl-backups'), ...roots])
 }
 
-function parse(root: string, stdout: string, failure?: unknown): LowLabelResult {
-  const parsed = lastJsonLine<LowLabelResult>(stdout, failure)
-  return 'value' in parsed ? parsed.value
-    : { root, marked: false, removedSids: [], denyRemoved: 0, labelReset: false, backup: null, error: parsed.error }
+/**
+ * 脚本每个工作区输出一行 JSON；按 root 对回去，没有输出的（超时、进程失败）记成错误。
+ * @param roots - 传给脚本的工作区。
+ * @param stdout - 脚本输出（失败时是已输出的部分）。
+ * @param failure - 进程层的失败。
+ * @returns 与 roots 同序的结果。
+ */
+export function parseAll(roots: readonly string[], stdout: string, failure?: unknown): LowLabelResult[] {
+  const byRoot = new Map<string, LowLabelResult>()
+  for (const line of stdout.split(/\r?\n/u)) {
+    try {
+      const result = JSON.parse(line) as LowLabelResult
+      if (typeof result?.root === 'string') byRoot.set(result.root, result)
+    } catch { /* 不是结果行 */ }
+  }
+  const error = failure instanceof Error ? failure.message : 'no output'
+  return roots.map(root => byRoot.get(root) ?? { root, marked: false, removedSids: [], denyRemoved: 0, labelReset: false, backup: null, error })
 }
 
 /** 把这一轮结果写进 `<home>/deepseekgui/low-label-cleanup.json`，方便查问题。 */
@@ -134,40 +145,37 @@ function record(home: string, reason: string, results: LowLabelResult[]): void {
 }
 
 /**
- * 依次清理一组工作区（异步，用于启动时）。
+ * 清理一组工作区（异步，用于启动时）。全部工作区一个 PowerShell 进程。
  * @param roots - 工作区根目录。
  * @param home - DSH home（备份与记录放在这里）。
  * @returns 每个工作区的结果。
  */
 export async function revokeLowLabels(roots: readonly string[], home: string): Promise<LowLabelResult[]> {
-  const backupDir = join(home, 'deepseekgui', 'acl-backups')
-  const results: LowLabelResult[] = []
-  for (const root of roots) {
-    results.push(await new Promise<LowLabelResult>((resolve) => {
-      execFile(POWERSHELL, argsFor(root, backupDir), { timeout: 10 * 60_000, windowsHide: true }, (error, stdout) => {
-        resolve(parse(root, String(stdout), error ?? undefined))
-      })
-    }))
-  }
+  const results = roots.length === 0 ? [] : await new Promise<LowLabelResult[]>((resolve) => {
+    execFile(POWERSHELL, argsFor(roots, home), { timeout: roots.length * 10 * 60_000, windowsHide: true }, (error, stdout) => {
+      resolve(parseAll(roots, String(stdout), error ?? undefined))
+    })
+  })
   record(home, 'startup', results)
   return results
 }
 
 /**
- * 同步清理（用于进程退出时，'exit' 回调里只能做同步的事）。
+ * 同步清理（用于进程退出时，'exit' 回调里只能做同步的事）。全部工作区一个 PowerShell
+ * 进程：Host 多活的时间越短，官方更新器拉起的安装器越不容易撞上目录占用。
  * @param roots - 工作区根目录。
  * @param home - DSH home。
  * @returns 每个工作区的结果。
  */
 export function revokeLowLabelsSync(roots: readonly string[], home: string): LowLabelResult[] {
-  const backupDir = join(home, 'deepseekgui', 'acl-backups')
-  const results = roots.map((root) => {
+  let results: LowLabelResult[] = []
+  if (roots.length > 0) {
     try {
-      return parse(root, execFileSync(POWERSHELL, argsFor(root, backupDir), { timeout: 2 * 60_000, windowsHide: true, encoding: 'utf8' }))
+      results = parseAll(roots, execFileSync(POWERSHELL, argsFor(roots, home), { timeout: roots.length * 2 * 60_000, windowsHide: true, encoding: 'utf8' }))
     } catch (error) {
-      return parse(root, '', error)
+      results = parseAll(roots, String((error as { stdout?: unknown }).stdout ?? ''), error)
     }
-  })
+  }
   record(home, 'exit', results)
   return results
 }

@@ -97,14 +97,16 @@ export const mono: React.CSSProperties = { fontFamily: 'var(--ds-font-family-cod
  * resizes our views together with the chat (acceptance 2026-09-06).
  */
 export const view: React.CSSProperties = {
-  display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 0', boxSizing: 'border-box',
+  // 左右 20px 和官方「轨迹」视图一样：窄窗口时不贴边；宽窗口时 maxWidth 多出的 40px
+  // 正好被内边距吃掉，内容仍和对话列对齐。
+  display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 20px', boxSizing: 'border-box',
   // 住户 2026-09-22：对话以外的标签页里，官方 composer 是绝对定位的浮层
   // （overlay 形态），内容滚到底就跑到卡片后面，从半透明的卡片里透出来。
   // 底部留出 composer 的高度（官方把它写在滚动容器的 --dsh-composer-height
   // 上）；skin.ts 只在 overlay 形态下把这个变量设起来，sticky 形态下留白
   // 仍是 12px，不会多出一段空白。
   paddingBottom: 'var(--deepseekgui-view-bottom-inset, 12px)',
-  width: '100%', maxWidth: 'var(--dsh-chat-content-width, 920px)', margin: '0 auto',
+  width: '100%', maxWidth: 'calc(var(--dsh-chat-content-width, 920px) + 40px)', margin: '0 auto',
   fontSize: 14, lineHeight: '22px', color: 'var(--dsw-alias-label-primary)',
 }
 
