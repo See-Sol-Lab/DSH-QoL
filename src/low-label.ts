@@ -117,22 +117,28 @@ function argsFor(roots: readonly string[], home: string): string[] {
 }
 
 /**
- * 脚本每个工作区输出一行 JSON；按 root 对回去，没有输出的（超时、进程失败）记成错误。
+ * 脚本按 roots 的顺序每个工作区输出一行 JSON；按顺序对回去（不按 root 字段对：中文路径
+ * 经过控制台编码可能变样），没有输出的（超时、进程失败）记成错误。
  * @param roots - 传给脚本的工作区。
  * @param stdout - 脚本输出（失败时是已输出的部分）。
  * @param failure - 进程层的失败。
  * @returns 与 roots 同序的结果。
  */
 export function parseAll(roots: readonly string[], stdout: string, failure?: unknown): LowLabelResult[] {
-  const byRoot = new Map<string, LowLabelResult>()
+  const lines: LowLabelResult[] = []
   for (const line of stdout.split(/\r?\n/u)) {
     try {
       const result = JSON.parse(line) as LowLabelResult
-      if (typeof result?.root === 'string') byRoot.set(result.root, result)
+      if (typeof result?.root === 'string') lines.push(result)
     } catch { /* 不是结果行 */ }
   }
   const error = failure instanceof Error ? failure.message : 'no output'
-  return roots.map(root => byRoot.get(root) ?? { root, marked: false, removedSids: [], denyRemoved: 0, labelReset: false, backup: null, error })
+  return roots.map((root, index) => {
+    const result = lines[index]
+    return result === undefined
+      ? { root, marked: false, removedSids: [], denyRemoved: 0, labelReset: false, backup: null, error }
+      : { ...result, root }
+  })
 }
 
 /** 把这一轮结果写进 `<home>/deepseekgui/low-label-cleanup.json`，方便查问题。 */

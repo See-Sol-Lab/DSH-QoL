@@ -12,6 +12,8 @@ param(
   [Parameter(Mandatory = $true, ValueFromRemainingArguments = $true)][string[]]$Roots
 )
 $ErrorActionPreference = 'Stop'
+# 输出给 Node 按 UTF-8 读；不设的话 Windows PowerShell 5.1 用系统代码页（中文系统是 GBK），中文路径会乱码。
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $stamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH-mm-ss-fffZ')
 
 function Revoke([string]$Root) {
