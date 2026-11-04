@@ -19,7 +19,7 @@ import { applyNotify } from './notify/register.tsx'
 import { applySkills } from './skills/register.tsx'
 import { installSkin } from './skin.ts'
 import { installSmoothText } from './smooth-text.tsx'
-import { installSettingsIcons } from './settings-icons.ts'
+import { installSettingsIcons, registerSectionIcons } from './settings-icons.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -208,9 +208,10 @@ export async function apply(ctx: Context): Promise<void> {
   } catch (error) {
     console.error(`[dsh-qol] privacy section failed: ${error instanceof Error ? error.message : String(error)}`)
   }
-  // 设置导航里本包各分区的图标（官方只认自己的 id，其余画齿轮）。
+  // 设置导航里本包各分区的图标（0.2.2 起走官方插槽，0.2.1 按文字认行）。
   try {
     ctx.inject(['locale'], (scoped) => { scoped.effect(() => installSettingsIcons(scoped), 'dsh-qol: settings icons') })
+    ctx.inject(['slots'], (scoped) => { registerSectionIcons(scoped) })
   } catch (error) {
     console.error(`[dsh-qol] settings icons failed: ${error instanceof Error ? error.message : String(error)}`)
   }

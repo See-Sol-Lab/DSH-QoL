@@ -2,13 +2,16 @@
  * 设置导航里本包各分区的图标（GUI 的对应关系：全局记忆=思考、已归档=归档、用量=仪表盘、
  * 技能=技能；生活质量包本身用「插件风车」）。
  *
- * 官方设置页按分区 id 写死图标，未知 id 一律画齿轮，也不接受插件传图标（GUI 当年是改
- * 官方 SettingsRoot 的 navIcon）。这里不碰官方 React 管的节点内容：认出我们那几行后只
+ * 官方 0.2.2 起有 settings.section.icon 插槽，按分区 id 注册官方图标组件即可。
+ *
+ * 0.2.1 没有这个插槽：官方设置页按分区 id 写死图标，未知 id 一律画齿轮（GUI 当年是改
+ * 官方 SettingsRoot 的 navIcon）。那边不碰官方 React 管的节点内容：认出我们那几行后只
  * 给按钮打一个 data 属性，样式把官方齿轮藏起来，用 ::before 按官方图标的形状画一个。
  * 图标形状取自官方图标组件本身（运行时调用、转成 SVG），和官方图标库一致。
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { createElement } from 'react'
 import {
   IconArchiveOutlineMedium,
   IconPluginPinwheelOutlineMedium,
@@ -21,12 +24,28 @@ const STYLE_ID = 'dsh-qol-settings-icons'
 const ATTR = 'data-dsh-qol-icon'
 
 /** 图标名 → 官方图标组件；分区由它的导航文字认出（文字随界面语言，每次现取）。 */
-const ICONS: Record<string, { component: unknown; label: (ctx: Context) => string }> = {
-  pinwheel: { component: IconPluginPinwheelOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol')('nav') },
-  archive: { component: IconArchiveOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol.workbench')('archived.nav') },
-  skill: { component: IconSkillOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol.skills')('nav.skills') },
-  gauge: { component: IconGaugeOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol.usage')('nav') },
-  think: { component: IconThinkOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol.memory')('nav.memory') },
+const ICONS: Record<string, { section: string; component: unknown; label: (ctx: Context) => string }> = {
+  pinwheel: { section: 'dsh-qol', component: IconPluginPinwheelOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol')('nav') },
+  archive: { section: 'dsh-qol-archived', component: IconArchiveOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol.workbench')('archived.nav') },
+  skill: { section: 'dsh-qol-skills', component: IconSkillOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol.skills')('nav.skills') },
+  gauge: { section: 'dsh-qol-usage', component: IconGaugeOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol.usage')('nav') },
+  think: { section: 'dsh-qol-memory', component: IconThinkOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol.memory')('nav.memory') },
+}
+
+const ICON_SLOT = 'settings.section.icon'
+
+/**
+ * 按分区 id 注册官方图标（0.2.2 起）。开发依赖还是 0.2.1 的类型，所以这里按字符串调用；
+ * 官方没有这个插槽时不会有声明者，回调不执行。
+ * @param ctx - 带 slots 的浏览器侧上下文。
+ */
+export function registerSectionIcons(ctx: Context): void {
+  const register = (ctx.slots.register as unknown as (options: Record<string, unknown>, component: unknown) => () => void).bind(ctx.slots)
+  const inject = (ctx.slots.inject as unknown as (key: string, entries: () => unknown) => void).bind(ctx.slots)
+  for (const { section, component } of Object.values(ICONS)) {
+    const Icon = ({ size }: { size: number }) => createElement(component as (props: { size: number }) => null, { size })
+    inject(ICON_SLOT, () => register({ name: ICON_SLOT, id: section }, Icon))
+  }
 }
 
 type Element = { type: unknown; props: Record<string, unknown> } | string | number | boolean | null | undefined | Element[]
@@ -87,7 +106,8 @@ export function installSettingsIcons(ctx: Context): () => void {
     if (buttons.length === 0) return
     const byLabel = new Map(Object.entries(ICONS).map(([name, icon]) => [icon.label(ctx), name]))
     for (const button of Array.from(buttons)) {
-      const name = byLabel.get(button.textContent?.trim() ?? '')
+      // 有官方插槽的版本由 registerSectionIcons 负责，这里什么都不画。
+      const name = button.querySelector(`[data-slot="${ICON_SLOT}"]`) === null ? byLabel.get(button.textContent?.trim() ?? '') : undefined
       if (name === undefined) button.removeAttribute(ATTR)
       else if (button.getAttribute(ATTR) !== name) button.setAttribute(ATTR, name)
     }

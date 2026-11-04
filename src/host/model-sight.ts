@@ -28,7 +28,6 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import type { PromptAssembly } from '@deepseek-ai/dsh-system-prompt'
 
 /** Name of the projected context (shows up in the runtime-context sections). */
 export const MODEL_SIGHT_CONTEXT_NAME = 'dsh-qol:model-sight'
@@ -130,7 +129,7 @@ export function registerModelSight(ctx: Context, llm: ModelSightSource): () => v
 
   for (const provider of llm.listProviders()) void learnCatalog(provider.id)
 
-  return ctx.on('system-prompt/assemble', async (_assembly, _context, next): Promise<PromptAssembly> => {
+  return ctx.on('system-prompt/assemble', async (_assembly, _context, next) => {
     const assembled = await next()
     const { provider, model } = assembled.variables
     if (provider === undefined || model === undefined) return assembled
