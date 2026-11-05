@@ -1,10 +1,9 @@
 /**
- * 设置「用量与余额」（移植自 DeepSeekGUI 设置插件的用量分区）。
+ * 设置「用量」（移植自 DeepSeekGUI 设置插件的用量分区）。余额以官方「账号与余额」为准。
  *
  * 数据由 Host 的 workbenchInspector.accountUsage 带官方账号令牌去开放平台取、聚合
  * 好再给过来，这里只画聚合值，不做本地统计。打开本页读一次，🔄 再读；Host 5 秒内
- * 的重复请求直接给上一份。金额是十进制字符串，只截不算。官方账号页没有扩展位，
- * 所以单独一个分区，不在余额卡片下面。
+ * 的重复请求直接给上一份。金额是十进制字符串，只截不算。
  */
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -14,11 +13,9 @@ import { button, caption, card, column, intro, row } from './memory/styles.ts'
 export const NS_USAGE = 'dsh.qol.usage'
 
 export const zh = {
-  'nav': '用量与余额',
+  'nav': '用量',
   'intro': '数据来自 DeepSeek 开放平台（用你在本机登录的官方账号读取），和官网用量页是同一份账单。',
-  'balance': '余额',
   'total-cost': '累计消费',
-  'bonus': '赠金：',
   'period.today': '今天',
   'period.7d': '7 天',
   'period.30d': '30 天',
@@ -48,11 +45,9 @@ export const zh = {
 export type UsageKey = keyof typeof zh
 
 export const en: Record<UsageKey, string> = {
-  'nav': 'Usage and balance',
+  'nav': 'Usage',
   'intro': 'Read from the DeepSeek open platform with the official account signed in on this machine; the same bill as the official usage page.',
-  'balance': 'Balance',
   'total-cost': 'Total spent',
-  'bonus': 'Bonus: ',
   'period.today': 'Today',
   'period.7d': '7 days',
   'period.30d': '30 days',
@@ -124,7 +119,7 @@ const active: CSSProperties = { ...button, border: '1px solid var(--dsw-alias-br
 type Period = 'today' | '7d' | '30d'
 
 /**
- * 用量与余额分区。
+ * 用量分区。
  * @param props - 运行时座位、文案与取数面。
  * @returns 分区内容。
  */
@@ -189,11 +184,6 @@ export function UsageSection(props: UsageSectionProps): ReactNode {
   return frame(
     <>
       <div style={{ ...row, alignItems: 'stretch' }}>
-        <div style={flexCard}>
-          <div style={caption}>{t('balance')}</div>
-          <div style={bigNumber}>{moneyList(data.balances, empty)}</div>
-          {data.bonus.length > 0 ? <div style={caption}>{t('bonus') + moneyList(data.bonus, empty)}</div> : null}
-        </div>
         <div style={flexCard}>
           <div style={caption}>{t('total-cost')}</div>
           <div style={bigNumber}>{moneyList(data.totalCosts, empty)}</div>

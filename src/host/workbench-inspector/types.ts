@@ -68,21 +68,6 @@ export interface WorkbenchWorktree extends WorktreeInfo {
 }
 
 
-/** The interface language a Markdown export is written in (B8-P1). */
-export type WorkbenchExportLanguage = 'zh' | 'en'
-
-/**
- * The rendered human-readable Markdown export of one Session (B8-P1). The
- * document quotes the log verbatim and is never sanitized; the desktop owns
- * the save dialog and derives the default file name from `title`.
- */
-export interface WorkbenchExportMarkdown {
-  /** The Session's current display title, already resolved. */
-  readonly title: string
-  /** The complete document; the desktop writes it UTF-8 without BOM. */
-  readonly markdown: string
-}
-
 /**
  * Repository-level facts for the Git and Worktree views in one read: the
  * current status, configured remotes, the newest commits, and every
@@ -107,7 +92,7 @@ export const AREA_END = '<!-- deepseekgui:archive-notes:end -->'
 
 
 // DSH-QoL：技能库的类型一并从 @see-sol-lab/dsh-qol/types 导出（远程接口描述按这个路径引用）。
-// ---- 用量与余额（移植自 DeepSeekGUI usage-service） ----
+// ---- 用量（移植自 DeepSeekGUI usage-service） ----
 
 /** 一笔金额：币种 + 十进制字符串，原样来自官方，绝不经浮点。 */
 export interface UsageMoney {
@@ -135,10 +120,6 @@ export interface UsageHeatmapDay {
 
 /** 聚合后的展示值（设置页只拿这个）。 */
 export interface UsageData {
-  /** 充值余额，可多币种。 */
-  readonly balances: readonly UsageMoney[]
-  /** 赠金余额，只保留 > 0 的钱包。 */
-  readonly bonus: readonly UsageMoney[]
   /** 累计消费，按币种。 */
   readonly totalCosts: readonly UsageMoney[]
   readonly today: UsageWindowView

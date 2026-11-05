@@ -45,6 +45,8 @@ export interface Config {
   skin: Volatile<boolean>
   /** 给当前用户补上工作区的完全控制，让官方沙箱在非系统盘也能首次授权。默认开。 */
   fixWorkspaceAccess: Volatile<boolean>
+  /** 每天最多查一次 GitHub 最新版本并提示（浏览器侧读）。默认开。 */
+  updateCheck: Volatile<boolean>
 }
 
 export const Config = z.object({
@@ -53,6 +55,7 @@ export const Config = z.object({
   revokeLowLabel: z.boolean().default(true).volatile(),
   skin: z.boolean().default(true).volatile(),
   fixWorkspaceAccess: z.boolean().default(true).volatile(),
+  updateCheck: z.boolean().default(true).volatile(),
 })
 
 type Key = 'inventory' | 'feedback'

@@ -9,7 +9,6 @@ import type { DiffResult, DiffScope } from '@deepseek-ai/dsh-git/types'
 import Schema from '@deepseek-ai/schemastery'
 import { dshHome } from '../home.ts'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
-import { renderSessionMarkdown, untitledSessionTitle } from './session-markdown.ts'
 import { fetchAccountUsage, type UsageCredentials } from './usage.ts'
 import { existsSync, lstatSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { isAbsolute, join, relative } from 'node:path'
@@ -19,7 +18,7 @@ import type {} from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-workspace'
 // Type-only: the api-session/removed event.
 import type {} from '@deepseek-ai/dsh-api-session-controller'
-import { projectMemoryFileName, type WorkbenchExportLanguage, type WorkbenchExportMarkdown, type WorkbenchFileText, type WorkbenchGlobalMemory, type WorkbenchMemory, type WorkbenchSeedLocale, type WorkbenchOverview, type WorkbenchRepository, type WorkbenchUsage, type WorkbenchWorktree } from './types.ts'
+import { projectMemoryFileName, type WorkbenchFileText, type WorkbenchGlobalMemory, type WorkbenchMemory, type WorkbenchSeedLocale, type WorkbenchOverview, type WorkbenchRepository, type WorkbenchUsage, type WorkbenchWorktree } from './types.ts'
 
 export type * from './types.ts'
 export { projectMemoryFileName } from './types.ts'
@@ -30,8 +29,6 @@ export interface Config {
   logLimit: number
   /** Inclusive UTF-8 byte limit for file text and Git patches. */
   maxTextBytes: number
-  /** Inclusive UTF-8 byte limit for a rendered Markdown export. */
-  maxExportBytes: number
 }
 
 /** Whether two git-reported paths name the same directory (git prints forward slashes; Windows is case-insensitive). */
@@ -73,7 +70,6 @@ export class WorkbenchInspector extends TypertRemoteService {
   static Config: Schema<Config> = Schema.object({
     logLimit: Schema.natural().min(1).default(30),
     maxTextBytes: Schema.natural().min(1).default(512 * 1024),
-    maxExportBytes: Schema.natural().min(1).default(20 * 1024 * 1024),
   })
 
   /**
@@ -105,7 +101,7 @@ export class WorkbenchInspector extends TypertRemoteService {
   private lastUsage: { at: number; value: Promise<WorkbenchUsage> } | undefined
 
   /**
-   * 账户用量与余额：插件后台带官方账号的平台令牌请求开放平台，只返回聚合值。
+   * 账户用量：插件后台带官方账号的平台令牌请求开放平台，只返回聚合值。
    * @param locale - 界面语言。
    * @param signal - Request cancellation.
    * @returns 用量结果；没登录为 signed-out。
@@ -315,49 +311,6 @@ export class WorkbenchInspector extends TypertRemoteService {
     const value = await this.ctx.git.diff(root, scope, path === '' ? undefined : path, true, this.config.maxTextBytes)
     signal.throwIfAborted()
     return value
-  }
-
-  /**
-   * Render one Session as a human-readable Markdown document (B8-P1). The
-   * log is read through the query service — a running turn's newest events
-   * may not be on disk yet — and folded by the pure renderer; no model is
-   * called and nothing is sanitized. Compaction markers ride the raw log,
-   * so pre-compaction messages are quoted as they happened.
-   * @param sessionId - Session selected by the desktop user.
-   * @param includeDetails - Whether tool calls and reasoning blocks ride along.
-   * @param language - The desktop UI language for headings and labels.
-   * @param signal - Request cancellation.
-   * @returns the display title and the rendered document.
-   * @throws when the rendered document exceeds `maxExportBytes`; the message
-   * is the product's fixed user-facing sentence.
-   */
-  @Remote
-  async exportMarkdown(
-    sessionId: SessionId,
-    includeDetails: boolean,
-    language: WorkbenchExportLanguage,
-    signal: AbortSignal,
-  ): Promise<WorkbenchExportMarkdown> {
-    signal.throwIfAborted()
-    using observation = await this.ctx.sessionQuery.observeSession(sessionId, { signal, projectionMode: 'none' })
-    const snapshot = await this.ctx.sessionQuery.readTitle(sessionId, signal)
-    const title = snapshot?.title ?? untitledSessionTitle(language)
-    const markdown = renderSessionMarkdown({
-      title,
-      ...observation.header.cwd === undefined ? {} : { cwd: observation.header.cwd },
-      sessionId,
-      events: observation.events,
-      includeDetails,
-      language,
-      exportedAt: Date.now(),
-    })
-    if (Buffer.byteLength(markdown, 'utf8') > this.config.maxExportBytes) {
-      // The desktop shows this message verbatim, in the export's language.
-      throw new Error(language === 'zh'
-        ? '会话过大，暂不支持导出为 Markdown，可改用官方的会话日志导出'
-        : 'This session is too large to export as Markdown; use the official session log download instead')
-    }
-    return { title, markdown }
   }
 
   /**

@@ -199,15 +199,6 @@ export function addDecimalStrings(a: string, b: string): string {
 }
 
 /**
- * 十进制字符串是否严格大于 0（赠金「>0 才附注」用）。
- * @param text - 十进制字符串。
- * @returns 是否为正。
- */
-export function decimalIsPositive(text: string): boolean {
-  return parseDecimal(text).units > 0n
-}
-
-/**
  * 十进制字符串是否合法（官方金额字段的形状检查）。
  * @param text - 候选。
  * @returns 是否匹配 `-?digits(.digits)?`。
@@ -304,25 +295,19 @@ function costBuckets(bizData: unknown): CostBucket[] {
   return buckets
 }
 
-/** `users/get_user_summary` 的 biz_data → 钱包与累计消费。 */
-function summaryOf(bizData: unknown): Pick<UsageData, 'balances' | 'bonus' | 'totalCosts'> {
+/** `users/get_user_summary` 的 biz_data → 累计消费（余额看官方「账号与余额」）。 */
+function summaryOf(bizData: unknown): Pick<UsageData, 'totalCosts'> {
   if (!isRecord(bizData)) throw new UsageFormatError('summary malformed')
-  const wallets = (key: string, field: 'balance' | 'amount'): UsageMoney[] => {
-    const list = bizData[key]
-    if (!Array.isArray(list)) throw new UsageFormatError(`summary.${key} missing`)
-    return list.map((entry) => {
-      if (!isRecord(entry)) throw new UsageFormatError(`summary.${key}[] malformed`)
-      const currency = stringField(entry, 'currency')
-      const amount = entry[field]
-      if (!isDecimalString(amount)) throw new UsageFormatError(`summary.${key}[].${field} is not a decimal string`)
-      return { currency, amount }
-    })
-  }
-  return {
-    balances: wallets('normal_wallets', 'balance'),
-    bonus: wallets('bonus_wallets', 'balance').filter(money => decimalIsPositive(money.amount)),
-    totalCosts: wallets('total_costs', 'amount'),
-  }
+  const list = bizData['total_costs']
+  if (!Array.isArray(list)) throw new UsageFormatError('summary.total_costs missing')
+  const totalCosts: UsageMoney[] = list.map((entry) => {
+    if (!isRecord(entry)) throw new UsageFormatError('summary.total_costs[] malformed')
+    const currency = stringField(entry, 'currency')
+    const amount = entry['amount']
+    if (!isDecimalString(amount)) throw new UsageFormatError('summary.total_costs[].amount is not a decimal string')
+    return { currency, amount }
+  })
+  return { totalCosts }
 }
 
 /** 把落在窗口内的 amount 桶与 cost 桶聚合成一个时段的消费情况。 */

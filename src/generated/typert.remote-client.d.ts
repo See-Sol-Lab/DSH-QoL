@@ -6,7 +6,7 @@ import type {
 } from '@deepseek-ai/dsh-typert-protocol'
 import type { DiffResult, DiffScope } from '@deepseek-ai/dsh-git/types'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { SkillImportOutcome, SkillImportPreview, SkillImportRequest, SkillInstallReferences, SkillInventory, SkillProjectSelectionOutcome, SkillProjectSelectionRequest, SkillProjectView, SkillUninstallOutcome, WorkbenchExportLanguage, WorkbenchExportMarkdown, WorkbenchFileText, WorkbenchGlobalMemory, WorkbenchMemory, WorkbenchOverview, WorkbenchRepository, WorkbenchSeedLocale, WorkbenchUsage } from '@see-sol-lab/dsh-qol/types'
+import type { SkillImportOutcome, SkillImportPreview, SkillImportRequest, SkillInstallReferences, SkillInventory, SkillProjectSelectionOutcome, SkillProjectSelectionRequest, SkillProjectView, SkillUninstallOutcome, WorkbenchFileText, WorkbenchGlobalMemory, WorkbenchMemory, WorkbenchOverview, WorkbenchRepository, WorkbenchSeedLocale, WorkbenchUsage } from '@see-sol-lab/dsh-qol/types'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$736b696c6c4d616e61676572 {
@@ -23,7 +23,6 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     createProjectAgents: (sessionId: SessionId, locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<'created' | 'exists'>>
     deleteSession: (sessionId: SessionId, signature: string) => Promise<RemoteResult<void>>
     diff: (sessionId: SessionId, scope: DiffScope, path: string, signal?: AbortSignal) => Promise<RemoteResult<DiffResult>>
-    exportMarkdown: (sessionId: SessionId, includeDetails: boolean, language: WorkbenchExportLanguage, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchExportMarkdown>>
     globalMemory: (signal?: AbortSignal) => Promise<RemoteResult<WorkbenchGlobalMemory>>
     memory: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchMemory>>
     overview: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchOverview>>
@@ -44,7 +43,6 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'workbenchInspector/createProjectAgents': (sessionId: SessionId, locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<'created' | 'exists'>>
     'workbenchInspector/deleteSession': (sessionId: SessionId, signature: string) => Promise<RemoteResult<void>>
     'workbenchInspector/diff': (sessionId: SessionId, scope: DiffScope, path: string, signal?: AbortSignal) => Promise<RemoteResult<DiffResult>>
-    'workbenchInspector/exportMarkdown': (sessionId: SessionId, includeDetails: boolean, language: WorkbenchExportLanguage, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchExportMarkdown>>
     'workbenchInspector/globalMemory': (signal?: AbortSignal) => Promise<RemoteResult<WorkbenchGlobalMemory>>
     'workbenchInspector/memory': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchMemory>>
     'workbenchInspector/overview': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchOverview>>
@@ -71,7 +69,6 @@ export declare const TYPERT_REMOTE: TypertRemoteInfo<{
   readonly 'workbenchInspector/createProjectAgents': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'locale': WorkbenchSeedLocale }, 'created' | 'exists'>
   readonly 'workbenchInspector/deleteSession': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'signature': string }, void>
   readonly 'workbenchInspector/diff': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'scope': DiffScope; readonly 'path': string }, DiffResult>
-  readonly 'workbenchInspector/exportMarkdown': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'includeDetails': boolean; readonly 'language': WorkbenchExportLanguage }, WorkbenchExportMarkdown>
   readonly 'workbenchInspector/globalMemory': TypertRemoteMethod<{  }, WorkbenchGlobalMemory>
   readonly 'workbenchInspector/memory': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, WorkbenchMemory>
   readonly 'workbenchInspector/overview': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, WorkbenchOverview>

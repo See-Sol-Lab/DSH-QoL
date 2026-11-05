@@ -1,6 +1,6 @@
 /**
- * 设置导航里本包各分区的图标（GUI 的对应关系：全局记忆=思考、已归档=归档、用量=仪表盘、
- * 技能=技能；生活质量包本身用「插件风车」）。
+ * 设置导航里本包各分区的图标（GUI 的对应关系：全局记忆=思考、用量=仪表盘、技能=技能；
+ * 生活质量包本身用「插件风车」）。
  *
  * 官方 0.2.2 起有 settings.section.icon 插槽，按分区 id 注册官方图标组件即可。
  *
@@ -13,7 +13,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { createElement } from 'react'
 import {
-  IconArchiveOutlineMedium,
   IconPluginPinwheelOutlineMedium,
   IconGaugeOutlineMedium,
   IconSkillOutlineMedium,
@@ -26,7 +25,6 @@ const ATTR = 'data-dsh-qol-icon'
 /** 图标名 → 官方图标组件；分区由它的导航文字认出（文字随界面语言，每次现取）。 */
 const ICONS: Record<string, { section: string; component: unknown; label: (ctx: Context) => string }> = {
   pinwheel: { section: 'dsh-qol', component: IconPluginPinwheelOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol')('nav') },
-  archive: { section: 'dsh-qol-archived', component: IconArchiveOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol.workbench')('archived.nav') },
   skill: { section: 'dsh-qol-skills', component: IconSkillOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol.skills')('nav.skills') },
   gauge: { section: 'dsh-qol-usage', component: IconGaugeOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol.usage')('nav') },
   think: { section: 'dsh-qol-memory', component: IconThinkOutlineMedium, label: ctx => ctx.locale.bind('dsh.qol.memory')('nav.memory') },
@@ -35,16 +33,13 @@ const ICONS: Record<string, { section: string; component: unknown; label: (ctx: 
 const ICON_SLOT = 'settings.section.icon'
 
 /**
- * 按分区 id 注册官方图标（0.2.2 起）。开发依赖还是 0.2.1 的类型，所以这里按字符串调用；
- * 官方没有这个插槽时不会有声明者，回调不执行。
+ * 按分区 id 注册官方图标（0.2.2 起）。官方没有这个插槽时不会有声明者，回调不执行。
  * @param ctx - 带 slots 的浏览器侧上下文。
  */
 export function registerSectionIcons(ctx: Context): void {
-  const register = (ctx.slots.register as unknown as (options: Record<string, unknown>, component: unknown) => () => void).bind(ctx.slots)
-  const inject = (ctx.slots.inject as unknown as (key: string, entries: () => unknown) => void).bind(ctx.slots)
   for (const { section, component } of Object.values(ICONS)) {
     const Icon = ({ size }: { size: number }) => createElement(component as (props: { size: number }) => null, { size })
-    inject(ICON_SLOT, () => register({ name: ICON_SLOT, id: section }, Icon))
+    ctx.slots.inject(ICON_SLOT, () => ctx.slots.register({ name: ICON_SLOT, id: section }, Icon))
   }
 }
 

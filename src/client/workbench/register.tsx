@@ -25,11 +25,9 @@ import { NS_TOOLS, en as toolsEn, zh as toolsZh, type ToolsKey } from './locales
 import { NS_INSPECTOR, en as inspectorEn, zh as inspectorZh, type InspectorKey } from './locales-inspector.ts'
 import { NS_MEMORY, en as memoryEn, zh as memoryZh, type MemoryKey } from './locales-memory.ts'
 import { en as workbenchEn, zh as workbenchZh, type WorkbenchKey } from './locales-workbench.ts'
-import { ArchivedSessionsSection } from './ArchivedSessionsSection.tsx'
 import { NS_USAGE, UsageSection, en as usageEn, zh as usageZh, type UsageKey } from './UsageSection.tsx'
-import { createSessionExporter, ExportSessionDialog, ExportSessionMenuItem } from './session-export.tsx'
 import { createSessionDeleter, DeleteSessionDialog, DeleteSessionMenuItem } from './session-delete.tsx'
-// Type-only: ctx.uiWorkspace（恢复与打开会话）。
+// Type-only: the session menu slot.
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 // Type-only: the shell.overlay slot.
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
@@ -59,17 +57,13 @@ const VIEWS = [
 
 const MEMORY_VIEW_ORDER = 23
 const MEMORY_SECTION_ORDER = 46
-/** 用量与余额分区：生活质量包（45）之前。 */
+/** 用量分区：生活质量包（45）之前。 */
 const USAGE_SECTION_ORDER = 44
-/** 已归档会话分区：排在官方分区之后、我们其他分区之前。 */
-const ARCHIVED_SECTION_ORDER = 30
-/** 会话菜单里「导出」的位置：官方的归档（400）之后。 */
-const EXPORT_MENU_ORDER = 450
-/** 会话菜单里「删除」的位置：导出之后（只对已归档的行出现）。 */
+/** 会话菜单里「删除」的位置（只对已归档的行出现）。 */
 const DELETE_MENU_ORDER = 500
 
 /** 工作台需要的官方服务。 */
-export const workbenchInject = ['slots', 'locale', 'remote', 'sessions', 'conversation', 'uiWorkspace'] as const
+export const workbenchInject = ['slots', 'locale', 'remote', 'sessions', 'conversation'] as const
 
 /**
  * 挂上工作台：远程客户端、文案、三个标签、全局记忆分区与工具卡片。
@@ -130,7 +124,7 @@ export async function applyWorkbench(ctx: Context): Promise<void> {
         inject: () => ({ desk }),
       }, MemorySettingsSection))
 
-    // 用量与余额：Host 带官方账号令牌取数，这里只拿聚合值。语言跟界面。
+    // 用量：Host 带官方账号令牌取数，这里只拿聚合值。语言跟界面。
     const tu = ctx.locale.bind(NS_USAGE)
     const loadUsage = async (): Promise<WorkbenchUsage> => {
       const result = await inspector.accountUsage(/[一-鿿]/u.test(tu('nav')) ? 'zh' : 'en', new AbortController().signal)
@@ -147,22 +141,9 @@ export async function applyWorkbench(ctx: Context): Promise<void> {
         inject: () => ({ load: loadUsage }),
       }, UsageSection))
 
-    // 删除已归档会话：设置「已归档的会话」每行的删除按钮，与会话菜单里的「删除」（只对已归档的行出现，
-    // 先确认）。删除由 Host inspector 完成，只删已归档且没在加载的会话。
+    // 删除已归档会话：官方的归档查看与恢复在侧栏筛选里，但没有删除。会话菜单的「删除」只对已归档的行
+    // 出现，先确认；由 Host inspector 完成，只删已归档且没在加载的会话。
     const deleteSession = createSessionDeleter(inspector)
-    scoped.slots.inject('settings.section', () =>
-      scoped.slots.register({
-        name: 'settings.section',
-        id: 'dsh-qol-archived',
-        order: ARCHIVED_SECTION_ORDER,
-        locale: 'dsh.qol.workbench',
-        label: () => ctx.locale.bind('dsh.qol.workbench')('archived.nav'),
-        inject: () => ({
-          restore: (sessionId: SessionId) => ctx.uiWorkspace.unarchiveSession(sessionId),
-          open: (sessionId: SessionId): void => { ctx.uiWorkspace.openSession(sessionId) },
-          deleteSession,
-        }),
-      }, ArchivedSessionsSection))
     scoped.slots.inject('sidebar.workspaces.session.menu.item', () =>
       scoped.slots.register({
         name: 'sidebar.workspaces.session.menu.item',
@@ -178,24 +159,5 @@ export async function applyWorkbench(ctx: Context): Promise<void> {
         locale: 'dsh.qol.workbench',
         inject: () => ({ deleteSession }),
       }, DeleteSessionDialog))
-
-    // 会话菜单「导出为 Markdown」：菜单项写入待导出请求，对话框挂在整页浮层里（菜单关了它还在）。
-    // 导出语言跟界面语言：界面文案是中文就导出中文标签。
-    const exporter = createSessionExporter(inspector, () => /[一-鿿]/u.test(t('view.memory')) ? 'zh' : 'en')
-    scoped.slots.inject('sidebar.workspaces.session.menu.item', () =>
-      scoped.slots.register({
-        name: 'sidebar.workspaces.session.menu.item',
-        id: 'dsh-qol-export',
-        locale: 'dsh.qol.workbench',
-        order: EXPORT_MENU_ORDER,
-        inject: () => ({ exporter }),
-      }, ExportSessionMenuItem))
-    scoped.slots.inject('shell.overlay', () =>
-      scoped.slots.register({
-        name: 'shell.overlay',
-        id: 'dsh-qol-session-export',
-        locale: 'dsh.qol.workbench',
-        inject: () => ({ exporter }),
-      }, ExportSessionDialog))
   })
 }

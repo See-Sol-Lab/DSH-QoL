@@ -241,14 +241,6 @@ const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_accountUsage_resul
   'reason': z.union([z.literal(null), z.literal("network"), z.literal("blocked"), z.literal("timeout"), z.literal("format"), z.literal("no-session")]).readonly().describe('unavailable 时的原因；其余为 null。'),
   'fetchedAt': z.string().readonly().describe('这份数据取到的时刻（ISO）。'),
   'data': z.union([z.literal(null), z.object({
-  'balances': z.array(z.object({
-  'currency': z.string().readonly(),
-  'amount': z.string().readonly(),
-})).readonly().describe('充值余额，可多币种。'),
-  'bonus': z.array(z.object({
-  'currency': z.string().readonly(),
-  'amount': z.string().readonly(),
-})).readonly().describe('赠金余额，只保留 > 0 的钱包。'),
   'totalCosts': z.array(z.object({
   'currency': z.string().readonly(),
   'amount': z.string().readonly(),
@@ -317,17 +309,6 @@ const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_diff_result$schema
   'score': z.number().optional().describe('Rename/copy similarity score (`100`), when present.'),
 })).describe('Every changed file in record order.'),
   'patch': z.string().optional().describe('The requested unified patch, when `wantPatch` was set and the bound held.'),
-}))
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_0$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_0$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_0$schema$value ??= z.string())
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_1$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_1$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_1$schema$value ??= z.boolean())
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_2$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_2$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_2$schema$value ??= z.union([z.literal("zh"), z.literal("en")]))
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_result$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_result$schema$value ??= z.object({
-  'title': z.string().readonly().describe('The Session\'s current display title, already resolved.'),
-  'markdown': z.string().readonly().describe('The complete document; the desktop writes it UTF-8 without BOM.'),
 }))
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_globalMemory_result$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_globalMemory_result$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_globalMemory_result$schema$value ??= z.object({
@@ -483,12 +464,6 @@ let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_diff_parameter_1_str
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_diff_parameter_1_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_diff_parameter_1_strict$schema$value ??= z.union([z.literal("staged"), z.literal("unstaged")]))
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_diff_parameter_2_strict$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_diff_parameter_2_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_diff_parameter_2_strict$schema$value ??= z.string())
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_0_strict$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_0_strict$schema$value ??= z.string())
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_1_strict$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_1_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_1_strict$schema$value ??= z.boolean())
-let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_2_strict$schema$value
-const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_2_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_2_strict$schema$value ??= z.union([z.literal("zh"), z.literal("en")]))
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_memory_parameter_0_strict$schema$value
 const _deepseek_ai_dsh_workbench_inspector_workbenchInspector_memory_parameter_0_strict$schema = () => (_deepseek_ai_dsh_workbench_inspector_workbenchInspector_memory_parameter_0_strict$schema$value ??= z.string())
 let _deepseek_ai_dsh_workbench_inspector_workbenchInspector_overview_parameter_0_strict$schema$value
@@ -731,7 +706,7 @@ const $remote = createTypertRemoteInfo({
     },
     'workbenchInspector/accountUsage': {
       service: 'workbenchInspector',
-      description: '账户用量与余额：插件后台带官方账号的平台令牌请求开放平台，只返回聚合值。',
+      description: '账户用量：插件后台带官方账号的平台令牌请求开放平台，只返回聚合值。',
       invocation: { kind: 'direct' },
       parameters: [
         {
@@ -758,9 +733,9 @@ const $remote = createTypertRemoteInfo({
         typeSymbol: '@see-sol-lab/dsh-qol/types#WorkbenchUsage',
         create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_accountUsage_result$schema,
         description: '用量结果；没登录为 signed-out。',
-        jsonSchema: {"type":"object","properties":{"status":{"type":"string","enum":["signed-out","ready","unavailable"]},"reason":{"oneOf":[{"type":"null","const":null},{"type":"string","enum":["network","blocked","timeout","format","no-session"]}],"description":"unavailable 时的原因；其余为 null。"},"fetchedAt":{"type":"string","description":"这份数据取到的时刻（ISO）。"},"data":{"oneOf":[{"type":"null","const":null},{"type":"object","properties":{"balances":{"type":"array","items":{"type":"object","properties":{"currency":{"type":"string"},"amount":{"type":"string"}},"required":["currency","amount"],"additionalProperties":true},"description":"充值余额，可多币种。"},"bonus":{"type":"array","items":{"type":"object","properties":{"currency":{"type":"string"},"amount":{"type":"string"}},"required":["currency","amount"],"additionalProperties":true},"description":"赠金余额，只保留 > 0 的钱包。"},"totalCosts":{"type":"array","items":{"type":"object","properties":{"currency":{"type":"string"},"amount":{"type":"string"}},"required":["currency","amount"],"additionalProperties":true},"description":"累计消费，按币种。"},"today":{"type":"object","properties":{"costs":{"type":"array","items":{"type":"object","properties":{"currency":{"type":"string"},"amount":{"type":"string"}},"required":["currency","amount"],"additionalProperties":true},"description":"该时段消费金额，按币种分列（十进制字符串相加，保留原有小数位）。"},"requests":{"type":"number"},"tokens":{"type":"number","description":"Token 总数 = 缓存命中 + 缓存未命中 + 输出。"},"cacheHitRate":{"oneOf":[{"type":"null","const":null},{"type":"number"}],"description":"缓存命中率 = 命中 / (命中 + 未命中)；没有输入 token 时为 null。"}},"required":["costs","requests","tokens","cacheHitRate"],"additionalProperties":true},"days7":{"type":"object","properties":{"costs":{"type":"array","items":{"type":"object","properties":{"currency":{"type":"string"},"amount":{"type":"string"}},"required":["currency","amount"],"additionalProperties":true},"description":"该时段消费金额，按币种分列（十进制字符串相加，保留原有小数位）。"},"requests":{"type":"number"},"tokens":{"type":"number","description":"Token 总数 = 缓存命中 + 缓存未命中 + 输出。"},"cacheHitRate":{"oneOf":[{"type":"null","const":null},{"type":"number"}],"description":"缓存命中率 = 命中 / (命中 + 未命中)；没有输入 token 时为 null。"}},"required":["costs","requests","tokens","cacheHitRate"],"additionalProperties":true},"days30":{"type":"object","properties":{"costs":{"type":"array","items":{"type":"object","properties":{"currency":{"type":"string"},"amount":{"type":"string"}},"required":["currency","amount"],"additionalProperties":true},"description":"该时段消费金额，按币种分列（十进制字符串相加，保留原有小数位）。"},"requests":{"type":"number"},"tokens":{"type":"number","description":"Token 总数 = 缓存命中 + 缓存未命中 + 输出。"},"cacheHitRate":{"oneOf":[{"type":"null","const":null},{"type":"number"}],"description":"缓存命中率 = 命中 / (命中 + 未命中)；没有输入 token 时为 null。"}},"required":["costs","requests","tokens","cacheHitRate"],"additionalProperties":true},"heatmap":{"type":"array","items":{"type":"object","properties":{"date":{"type":"string","description":"`YYYY-MM-DD`（按计划的 tz）。"},"tokens":{"type":"number"}},"required":["date","tokens"],"additionalProperties":true},"description":"60 格，最早的一天在前。"}},"required":["balances","bonus","totalCosts","today","days7","days30","heatmap"],"additionalProperties":true}],"description":"ready 时存在。"},"usagePageUrl":{"type":"string","description":"官方用量页。"}},"required":["status","reason","fetchedAt","data","usagePageUrl"],"additionalProperties":true},
+        jsonSchema: {"type":"object","properties":{"status":{"type":"string","enum":["signed-out","ready","unavailable"]},"reason":{"oneOf":[{"type":"null","const":null},{"type":"string","enum":["network","blocked","timeout","format","no-session"]}],"description":"unavailable 时的原因；其余为 null。"},"fetchedAt":{"type":"string","description":"这份数据取到的时刻（ISO）。"},"data":{"oneOf":[{"type":"null","const":null},{"type":"object","properties":{"totalCosts":{"type":"array","items":{"type":"object","properties":{"currency":{"type":"string"},"amount":{"type":"string"}},"required":["currency","amount"],"additionalProperties":true},"description":"累计消费，按币种。"},"today":{"type":"object","properties":{"costs":{"type":"array","items":{"type":"object","properties":{"currency":{"type":"string"},"amount":{"type":"string"}},"required":["currency","amount"],"additionalProperties":true},"description":"该时段消费金额，按币种分列（十进制字符串相加，保留原有小数位）。"},"requests":{"type":"number"},"tokens":{"type":"number","description":"Token 总数 = 缓存命中 + 缓存未命中 + 输出。"},"cacheHitRate":{"oneOf":[{"type":"null","const":null},{"type":"number"}],"description":"缓存命中率 = 命中 / (命中 + 未命中)；没有输入 token 时为 null。"}},"required":["costs","requests","tokens","cacheHitRate"],"additionalProperties":true},"days7":{"type":"object","properties":{"costs":{"type":"array","items":{"type":"object","properties":{"currency":{"type":"string"},"amount":{"type":"string"}},"required":["currency","amount"],"additionalProperties":true},"description":"该时段消费金额，按币种分列（十进制字符串相加，保留原有小数位）。"},"requests":{"type":"number"},"tokens":{"type":"number","description":"Token 总数 = 缓存命中 + 缓存未命中 + 输出。"},"cacheHitRate":{"oneOf":[{"type":"null","const":null},{"type":"number"}],"description":"缓存命中率 = 命中 / (命中 + 未命中)；没有输入 token 时为 null。"}},"required":["costs","requests","tokens","cacheHitRate"],"additionalProperties":true},"days30":{"type":"object","properties":{"costs":{"type":"array","items":{"type":"object","properties":{"currency":{"type":"string"},"amount":{"type":"string"}},"required":["currency","amount"],"additionalProperties":true},"description":"该时段消费金额，按币种分列（十进制字符串相加，保留原有小数位）。"},"requests":{"type":"number"},"tokens":{"type":"number","description":"Token 总数 = 缓存命中 + 缓存未命中 + 输出。"},"cacheHitRate":{"oneOf":[{"type":"null","const":null},{"type":"number"}],"description":"缓存命中率 = 命中 / (命中 + 未命中)；没有输入 token 时为 null。"}},"required":["costs","requests","tokens","cacheHitRate"],"additionalProperties":true},"heatmap":{"type":"array","items":{"type":"object","properties":{"date":{"type":"string","description":"`YYYY-MM-DD`（按计划的 tz）。"},"tokens":{"type":"number"}},"required":["date","tokens"],"additionalProperties":true},"description":"60 格，最早的一天在前。"}},"required":["totalCosts","today","days7","days30","heatmap"],"additionalProperties":true}],"description":"ready 时存在。"},"usagePageUrl":{"type":"string","description":"官方用量页。"}},"required":["status","reason","fetchedAt","data","usagePageUrl"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":114,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":110,"column":9},
     },
     'workbenchInspector/createProjectAgents': {
       service: 'workbenchInspector',
@@ -810,7 +785,7 @@ const $remote = createTypertRemoteInfo({
         description: 'whether the file was created or already existed.',
         jsonSchema: {"type":"string","enum":["created","exists"]},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":274,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":270,"column":9},
     },
     'workbenchInspector/deleteSession': {
       service: 'workbenchInspector',
@@ -859,7 +834,7 @@ const $remote = createTypertRemoteInfo({
         description: 'Completion of content deletion and its client announcement.',
         jsonSchemaError: 'typert tool schema: unsupported void value',
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":370,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":323,"column":9},
     },
     'workbenchInspector/diff': {
       service: 'workbenchInspector',
@@ -926,74 +901,7 @@ const $remote = createTypertRemoteInfo({
         description: 'the bounded provider diff; truncation is never silent.',
         jsonSchema: {"type":"object","properties":{"files":{"type":"array","items":{"type":"object","properties":{"path":{"type":"string","description":"Path relative to the repo root."},"origPath":{"type":"string","description":"Original path for a rename/copy."},"status":{"type":"string","enum":["deleted","added","modified","renamed","copied","typechange"],"description":"Letter status from the name-status vocabulary (A/M/D/R/C/T)."},"binary":{"type":"boolean","description":"True when Git reports a binary file (`-` numstat columns)."},"addedLines":{"type":"number","description":"Added lines; absent for binary files."},"deletedLines":{"type":"number","description":"Deleted lines; absent for binary files."},"score":{"type":"number","description":"Rename/copy similarity score (`100`), when present."}},"required":["path","status","binary"],"additionalProperties":true},"description":"Every changed file in record order."},"patch":{"type":"string","description":"The requested unified patch, when `wantPatch` was set and the bound held."}},"required":["files"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":311,"column":9},
-    },
-    'workbenchInspector/exportMarkdown': {
-      service: 'workbenchInspector',
-      description: 'Render one Session as a human-readable Markdown document (B8-P1). The log is read through the query service — a running turn\'s newest events may not be on disk yet — and folded by the pure renderer; no model is called and nothing is sanitized. Compaction markers ride the raw log, so pre-compaction messages are quoted as they happened.',
-      invocation: { kind: 'direct' },
-      parameters: [
-        {
-          name: 'sessionId',
-          description: 'Session selected by the desktop user.',
-          source: 'json',
-          codec: {
-            mode: 'strict',
-            typeSymbol: '@deepseek-ai/dsh-session/types#SessionId',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_0$schema,
-            jsonSchema: {"type":"string"},
-          },
-          strictCodec: {
-            mode: 'strict',
-            typeSymbol: '@deepseek-ai/dsh-session/types#SessionId',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_0_strict$schema,
-            jsonSchema: {"type":"string"},
-          },
-        },
-        {
-          name: 'includeDetails',
-          description: 'Whether tool calls and reasoning blocks ride along.',
-          source: 'json',
-          codec: {
-            mode: 'strict',
-            typeSymbol: '@see-sol-lab/dsh-qol#workbenchInspector/exportMarkdown:includeDetails',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_1$schema,
-            jsonSchema: {"type":"boolean"},
-          },
-          strictCodec: {
-            mode: 'strict',
-            typeSymbol: '@see-sol-lab/dsh-qol#workbenchInspector/exportMarkdown:includeDetails',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_1_strict$schema,
-            jsonSchema: {"type":"boolean"},
-          },
-        },
-        {
-          name: 'language',
-          description: 'The desktop UI language for headings and labels.',
-          source: 'json',
-          codec: {
-            mode: 'strict',
-            typeSymbol: '@see-sol-lab/dsh-qol/types#WorkbenchExportLanguage',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_2$schema,
-            jsonSchema: {"type":"string","enum":["zh","en"]},
-          },
-          strictCodec: {
-            mode: 'strict',
-            typeSymbol: '@see-sol-lab/dsh-qol/types#WorkbenchExportLanguage',
-            create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_parameter_2_strict$schema,
-            jsonSchema: {"type":"string","enum":["zh","en"]},
-          },
-        },
-      ],
-      cancellation: { parameter: 'signal' },
-      result: {
-        mode: 'strict',
-        typeSymbol: '@see-sol-lab/dsh-qol/types#WorkbenchExportMarkdown',
-        create: _deepseek_ai_dsh_workbench_inspector_workbenchInspector_exportMarkdown_result$schema,
-        description: 'the display title and the rendered document.',
-        jsonSchema: {"type":"object","properties":{"title":{"type":"string","description":"The Session's current display title, already resolved."},"markdown":{"type":"string","description":"The complete document; the desktop writes it UTF-8 without BOM."}},"required":["title","markdown"],"additionalProperties":true},
-      },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":335,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":307,"column":9},
     },
     'workbenchInspector/globalMemory': {
       service: 'workbenchInspector',
@@ -1009,7 +917,7 @@ const $remote = createTypertRemoteInfo({
         description: 'the home and its text (\'\' when absent, null when unreadable or too large).',
         jsonSchema: {"type":"object","properties":{"home":{"type":"string","description":"生效的 DSH home。"},"text":{"oneOf":[{"type":"null","const":null},{"type":"string"}],"description":"全文；读不到或太大时为 null。"}},"required":["home","text"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":224,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":220,"column":9},
     },
     'workbenchInspector/memory': {
       service: 'workbenchInspector',
@@ -1042,7 +950,7 @@ const $remote = createTypertRemoteInfo({
         description: 'the cwd, the memory file name, its text or null, and the AGENTS.md presence.',
         jsonSchema: {"type":"object","properties":{"cwd":{"type":"string","description":"Session working directory."},"fileName":{"type":"string","description":"`<folder>.memory.md`, from {@link projectMemoryFileName}."},"text":{"oneOf":[{"type":"null","const":null},{"type":"string"}],"description":"Memory text; null when the file does not exist yet."},"agents":{"type":"boolean","description":"Whether `AGENTS.md` exists in the working directory."}},"required":["cwd","fileName","text","agents"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":205,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":201,"column":9},
     },
     'workbenchInspector/overview': {
       service: 'workbenchInspector',
@@ -1075,7 +983,7 @@ const $remote = createTypertRemoteInfo({
         description: 'the read-only repository overview.',
         jsonSchema: {"type":"object","properties":{"root":{"type":"string"},"status":{"type":"object","properties":{"clean":{"type":"boolean","description":"True when the work tree matches HEAD and the index (no entries at all)."},"head":{"type":"object","properties":{"kind":{"type":"string","enum":["branch","detached","unborn"]},"name":{"type":"string"},"oid":{"type":"string"}},"required":["kind","name"],"additionalProperties":true,"description":"HEAD fact from the `# branch.*` headers."},"upstream":{"type":"object","properties":{"ref":{"type":"string"},"ahead":{"type":"number"},"behind":{"type":"number"}},"required":["ref","ahead","behind"],"additionalProperties":true,"description":"Upstream ref plus ahead/behind from `# branch.upstream` / `# branch.ab`."},"entries":{"type":"array","items":{"type":"object","properties":{"kind":{"type":"string","enum":["staged","unstaged","untracked","conflict"],"description":"Which surface reports the change: `conflict` for unmerged records (`u`), `untracked` for `?` records, `staged` when the index column differs from `.`, `unstaged` when only the work-tree column differs."},"path":{"type":"string","description":"Path relative to the repo root."},"origPath":{"type":"string","description":"Original path for a rename/copy (the `2` record's second path)."},"x":{"type":"string","enum":[".","A","M","D","R","C","U","T","?","AM","AD","AU","AA","DD","DU","UA","UD","UU"],"description":"Index status column (`X` of `XY`)."},"y":{"type":"string","enum":[".","A","M","D","R","C","U","T","?","AM","AD","AU","AA","DD","DU","UA","UD","UU"],"description":"Work-tree status column (`Y` of `XY`)."},"score":{"type":"string","description":"Rename/copy similarity score (`R100` / `C75`), when present."}},"required":["kind","path","x","y"],"additionalProperties":true},"description":"Every changed path, in porcelain v2 record order."}},"required":["clean","head","entries"],"additionalProperties":true},"remotes":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string","description":"Remote name as configured (`origin`)."},"fetchUrl":{"type":"string","description":"The URL git fetches from."},"pushUrl":{"type":"string","description":"The URL git pushes to, when it differs from the fetch URL."}},"required":["name","fetchUrl"],"additionalProperties":true}},"commits":{"type":"array","items":{"type":"object","properties":{"sha":{"type":"string","description":"Full commit SHA."},"subject":{"type":"string","description":"First line of the commit message."},"author":{"type":"string","description":"Author name as recorded."},"time":{"type":"number","description":"Committer timestamp in Unix milliseconds."}},"required":["sha","subject","author","time"],"additionalProperties":true}},"worktrees":{"type":"array","items":{"type":"object","properties":{"statusError":{"type":"string","description":"A failed status read is unknown, not a clean work tree."},"current":{"type":"boolean","description":"True when the Session's repository root is this work tree."},"changedPaths":{"type":"array","items":{"type":"string"},"description":"Repository-relative paths changed in that work tree (staged, unstaged, untracked, conflict); empty when clean, unreadable, or bare."},"path":{"type":"string","description":"Absolute work-tree path."},"head":{"type":"string","description":"HEAD oid of that work tree."},"branch":{"type":"string","description":"Branch checked out there, when not detached."},"detached":{"type":"boolean","description":"True when the work tree is detached or unborn."},"bare":{"type":"boolean","description":"True for the bare repository itself."}},"required":["current","changedPaths","path","head","detached","bare"],"additionalProperties":true}}},"required":["root","status","remotes","commits","worktrees"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":404,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":357,"column":9},
     },
     'workbenchInspector/saveGlobalMemory': {
       service: 'workbenchInspector',
@@ -1125,7 +1033,7 @@ const $remote = createTypertRemoteInfo({
         description: 'completion after the atomic write.',
         jsonSchemaError: 'typert tool schema: unsupported void value',
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":238,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":234,"column":9},
     },
     'workbenchInspector/saveProjectMemory': {
       service: 'workbenchInspector',
@@ -1192,7 +1100,7 @@ const $remote = createTypertRemoteInfo({
         description: 'completion after the atomic write.',
         jsonSchemaError: 'typert tool schema: unsupported void value',
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":257,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":253,"column":9},
     },
     'workbenchInspector/status': {
       service: 'workbenchInspector',
@@ -1225,7 +1133,7 @@ const $remote = createTypertRemoteInfo({
         description: 'canonical Git status and root.',
         jsonSchema: {"type":"object","properties":{"root":{"type":"string"},"status":{"type":"object","properties":{"clean":{"type":"boolean","description":"True when the work tree matches HEAD and the index (no entries at all)."},"head":{"type":"object","properties":{"kind":{"type":"string","enum":["branch","detached","unborn"]},"name":{"type":"string"},"oid":{"type":"string"}},"required":["kind","name"],"additionalProperties":true,"description":"HEAD fact from the `# branch.*` headers."},"upstream":{"type":"object","properties":{"ref":{"type":"string"},"ahead":{"type":"number"},"behind":{"type":"number"}},"required":["ref","ahead","behind"],"additionalProperties":true,"description":"Upstream ref plus ahead/behind from `# branch.upstream` / `# branch.ab`."},"entries":{"type":"array","items":{"type":"object","properties":{"kind":{"type":"string","enum":["staged","unstaged","untracked","conflict"],"description":"Which surface reports the change: `conflict` for unmerged records (`u`), `untracked` for `?` records, `staged` when the index column differs from `.`, `unstaged` when only the work-tree column differs."},"path":{"type":"string","description":"Path relative to the repo root."},"origPath":{"type":"string","description":"Original path for a rename/copy (the `2` record's second path)."},"x":{"type":"string","enum":[".","A","M","D","R","C","U","T","?","AM","AD","AU","AA","DD","DU","UA","UD","UU"],"description":"Index status column (`X` of `XY`)."},"y":{"type":"string","enum":[".","A","M","D","R","C","U","T","?","AM","AD","AU","AA","DD","DU","UA","UD","UU"],"description":"Work-tree status column (`Y` of `XY`)."},"score":{"type":"string","description":"Rename/copy similarity score (`R100` / `C75`), when present."}},"required":["kind","path","x","y"],"additionalProperties":true},"description":"Every changed path, in porcelain v2 record order."}},"required":["clean","head","entries"],"additionalProperties":true}},"required":["root","status"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":294,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":290,"column":9},
     },
     'workbenchInspector/text': {
       service: 'workbenchInspector',
@@ -1292,7 +1200,7 @@ const $remote = createTypertRemoteInfo({
         description: 'the file text; oversized or binary files fail explicitly.',
         jsonSchema: {"type":"object","properties":{"path":{"type":"string"},"text":{"type":"string"}},"required":["path","text"],"additionalProperties":true},
       },
-      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":179,"column":9},
+      sourceLocation: {"file":"packages/api/workbench-inspector/src/index.ts","line":175,"column":9},
     },
   },
 }, z)
@@ -1505,8 +1413,8 @@ export const TYPERT = {
             "kind": "method",
             "name": "accountUsage",
             "signature": "@Remote async accountUsage(locale: WorkbenchSeedLocale, signal: AbortSignal): Promise<WorkbenchUsage>",
-            "summary": "账户用量与余额：插件后台带官方账号的平台令牌请求开放平台，只返回聚合值。",
-            "jsDoc": "/**\n * 账户用量与余额：插件后台带官方账号的平台令牌请求开放平台，只返回聚合值。\n * @param locale - 界面语言。\n * @param signal - Request cancellation.\n * @returns 用量结果；没登录为 signed-out。\n */"
+            "summary": "账户用量：插件后台带官方账号的平台令牌请求开放平台，只返回聚合值。",
+            "jsDoc": "/**\n * 账户用量：插件后台带官方账号的平台令牌请求开放平台，只返回聚合值。\n * @param locale - 界面语言。\n * @param signal - Request cancellation.\n * @returns 用量结果；没登录为 signed-out。\n */"
           },
           {
             "kind": "method",
@@ -1566,13 +1474,6 @@ export const TYPERT = {
           },
           {
             "kind": "method",
-            "name": "exportMarkdown",
-            "signature": "@Remote async exportMarkdown( sessionId: SessionId, includeDetails: boolean, language: WorkbenchExportLanguage, signal: AbortSignal, ): Promise<WorkbenchExportMarkdown>",
-            "summary": "Render one Session as a human-readable Markdown document (B8-P1).",
-            "jsDoc": "/**\n * Render one Session as a human-readable Markdown document (B8-P1). The\n * log is read through the query service — a running turn's newest events\n * may not be on disk yet — and folded by the pure renderer; no model is\n * called and nothing is sanitized. Compaction markers ride the raw log,\n * so pre-compaction messages are quoted as they happened.\n * @param sessionId - Session selected by the desktop user.\n * @param includeDetails - Whether tool calls and reasoning blocks ride along.\n * @param language - The desktop UI language for headings and labels.\n * @param signal - Request cancellation.\n * @returns the display title and the rendered document.\n * @throws when the rendered document exceeds `maxExportBytes`; the message\n * is the product's fixed user-facing sentence.\n */"
-          },
-          {
-            "kind": "method",
             "name": "deleteSession",
             "signature": "@Remote async deleteSession(sessionId: SessionId, signature: string): Promise<void>",
             "summary": "Delegate authorized deletion to the Session owner, waiting for active work.",
@@ -1629,7 +1530,7 @@ export const TYPERT = {
           },
           {
             "name": "UsageData",
-            "declaration": "export interface UsageData {\n    readonly balances: readonly UsageMoney[];\n    readonly bonus: readonly UsageMoney[];\n    readonly totalCosts: readonly UsageMoney[];\n    readonly today: UsageWindowView;\n    readonly days7: UsageWindowView;\n    readonly days30: UsageWindowView;\n    readonly heatmap: readonly UsageHeatmapDay[];\n}"
+            "declaration": "export interface UsageData {\n    readonly totalCosts: readonly UsageMoney[];\n    readonly today: UsageWindowView;\n    readonly days7: UsageWindowView;\n    readonly days30: UsageWindowView;\n    readonly heatmap: readonly UsageHeatmapDay[];\n}"
           },
           {
             "name": "UsageHeatmapDay",
@@ -1646,14 +1547,6 @@ export const TYPERT = {
           {
             "name": "UsageWindowView",
             "declaration": "export interface UsageWindowView {\n    readonly costs: readonly UsageMoney[];\n    readonly requests: number;\n    readonly tokens: number;\n    readonly cacheHitRate: number | null;\n}"
-          },
-          {
-            "name": "WorkbenchExportLanguage",
-            "declaration": "export type WorkbenchExportLanguage = 'zh' | 'en';"
-          },
-          {
-            "name": "WorkbenchExportMarkdown",
-            "declaration": "export interface WorkbenchExportMarkdown {\n    readonly title: string;\n    readonly markdown: string;\n}"
           },
           {
             "name": "WorkbenchFileText",

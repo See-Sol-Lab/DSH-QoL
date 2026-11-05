@@ -37,12 +37,12 @@ Since the official desktop app arrived, its direction has diverged from DeepSeek
 | Privacy and reporting switches | Settings → QoL Pack → Privacy | All four reports off |
 | Workbench: Changes, Git, Project, Memory | Tabs beside the conversation | On |
 | Project and global memory | Memory tab; Settings → Global memory | On |
-| Archived sessions | Settings → Archived sessions; session menu | On |
+| Delete archived sessions | Menu of an archived session | On |
 | Local skill library | Settings → Skill; Project tab | On |
-| Usage and balance | Settings → Usage and balance | On |
+| Usage statistics | Settings → Usage | On |
 | Smooth streaming text | Conversation | On |
 | Git and PR tools | Tools for the assistant, shown as result cards | On; write actions need approval |
-| Export a session as Markdown | Session menu | On |
+| In-app updates | Settings → QoL Pack → Version and updates | Checks on; you click to update |
 | System notifications | Windows notifications | On |
 | Vision hint | Context for the assistant | On |
 

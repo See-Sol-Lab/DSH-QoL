@@ -20,6 +20,8 @@ import { applySkills } from './skills/register.tsx'
 import { installSkin } from './skin.ts'
 import { installSmoothText } from './smooth-text.tsx'
 import { installSettingsIcons, registerSectionIcons } from './settings-icons.ts'
+import { createUpdater, type PluginManagerRemote, type Updater } from './update/updater.ts'
+import { UpdateNotice, UpdateRow } from './update/UpdateViews.tsx'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -34,7 +36,7 @@ type Values = Record<string, unknown>
 
 /** 一行开关：Host 条目、字段、怎么判断「开」、打开时写什么。 */
 interface Item {
-  key: 'analytics' | 'sessionLog' | 'inventory' | 'feedback' | 'lowLabel' | 'workspaceAccess' | 'skin'
+  key: 'analytics' | 'sessionLog' | 'inventory' | 'feedback' | 'lowLabel' | 'workspaceAccess' | 'skin' | 'updateCheck'
   entry: string
   field: string
   onValue: unknown
@@ -68,6 +70,12 @@ const WORKSPACE_ACCESS_ITEM: Item = {
 const SKIN_ITEM: Item = {
   key: 'skin', entry: 'dsh-qol', field: 'skin', onValue: true, offValue: false,
   isOn: v => v['skin'] !== false,
+}
+
+/** 自动检查更新：本包自己的 volatile 字段，默认开（见 update/updater.ts）。 */
+const UPDATE_CHECK_ITEM: Item = {
+  key: 'updateCheck', entry: 'dsh-qol', field: 'updateCheck', onValue: true, offValue: false,
+  isOn: v => v['updateCheck'] !== false,
 }
 
 const S = {
@@ -158,11 +166,16 @@ function ItemRow(props: { ctx: Context; t: T; item: Item; first: boolean }): Rea
   )
 }
 
-function makeSection(ctx: Context, t: T): () => ReactElement {
+function makeSection(ctx: Context, t: T, updateRow: () => ReactElement | null): () => ReactElement {
   return function QolSection() {
     return (
       <div style={S.section}>
-        <div style={S.title}>{t('privacy.title')}</div>
+        <div style={S.title}>{t('update.title')}</div>
+        <div style={S.card}>
+          <ItemRow ctx={ctx} t={t} item={UPDATE_CHECK_ITEM} first />
+          {updateRow()}
+        </div>
+        <div style={{ ...S.title, marginTop: 12 }}>{t('privacy.title')}</div>
         <div style={S.note}>{t('privacy.intro')}</div>
         <div style={S.card}>
           {ITEMS.map((item, i) => <ItemRow key={item.key} ctx={ctx} t={t} item={item} first={i === 0} />)}
@@ -196,7 +209,8 @@ export async function apply(ctx: Context): Promise<void> {
   try {
     ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-qol: dictionaries')
     const t = ctx.locale.bind(NS) as T
-    const Section = makeSection(ctx, t)
+    const update = applyUpdate(ctx, t)
+    const Section = makeSection(ctx, t, update)
     ctx.slots.inject('settings.section', () => ctx.slots.register({
       name: 'settings.section',
       id: 'dsh-qol',
@@ -244,6 +258,43 @@ export async function apply(ctx: Context): Promise<void> {
     await applySkills(ctx)
   } catch (error) {
     console.error(`[dsh-qol] skills failed: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+/**
+ * 应用内更新：拿到官方 pluginManager 远程接口后挂上右下角提示，并按开关自动检查一次。
+ * @param ctx - 浏览器侧插件上下文。
+ * @param t - 本包文案。
+ * @returns 设置页里那一行；官方接口还没就绪时什么都不画。
+ */
+function applyUpdate(ctx: Context, t: T): () => ReactElement | null {
+  let updater: Updater | undefined
+  ctx.inject(['slots', 'remote.pluginManager', 'configForms'], (scoped) => {
+    const remote = (scoped as unknown as { remote: { pluginManager: PluginManagerRemote } }).remote.pluginManager
+    const created = createUpdater(remote)
+    updater = created
+    const viewT = t as unknown as Parameters<typeof UpdateNotice>[0]['t']
+    scoped.slots.inject('shell.overlay', () => scoped.slots.register({
+      name: 'shell.overlay',
+      id: 'dsh-qol-update',
+      locale: NS,
+    }, () => <UpdateNotice updater={created} t={viewT} />))
+    const form = scoped.configForms.get<Values>('dsh-qol')
+    let started = false
+    const start = (): void => {
+      const snap = form.getSnapshot()
+      if (started || snap.status === 'loading') return
+      started = true
+      // 读不到配置时不联网：开关是用户说了算的。
+      void created.start(snap.status === 'ready' && snap.value?.['updateCheck'] !== false)
+    }
+    const unsubscribe = form.subscribe(start)
+    start()
+    scoped.effect(() => unsubscribe, 'dsh-qol: update check')
+  })
+  return () => {
+    if (updater === undefined) return null
+    return <UpdateRow updater={updater} t={t as unknown as Parameters<typeof UpdateRow>[0]['t']} />
   }
 }
 

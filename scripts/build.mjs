@@ -75,6 +75,8 @@ const client = await build({
   platform: 'browser',
   target: 'es2022',
   jsx: 'automatic',
+  // 正在运行的版本：和磁盘上的版本对比，就知道是不是「装好了，等重启」。
+  define: { __DSH_QOL_VERSION__: JSON.stringify(pkg.version) },
   // 皮肤底图内嵌成 data URL（两张 webp 共约 66KB）。
   loader: { '.webp': 'dataurl' },
   // 官方 client 运行时的 require 提供这几样；其余（含生成的远程接口描述与它用到的
