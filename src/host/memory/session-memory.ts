@@ -153,9 +153,7 @@ export function readMemoryFile(path: string, cap = MEMORY_FILE_CAP): MemoryFileV
  * own AGENTS.md files (loaded by the official agent-instructions plugin)
  * arrive after it, so the user's rules win.
  *
- * The text ships as `assets/deepseekgui-guide.md` beside the plugin: it is
- * content, not code, so wording changes need no recompile. A missing asset is
- * a broken package, so the read throws rather than injecting a silent blank.
+ * The text is `assets/qol-guide.md`, compiled into the bundle.
  * @returns The guide, trimmed of the trailing newline.
  */
 export function productGuide(): string {
@@ -163,8 +161,8 @@ export function productGuide(): string {
 }
 
 /**
- * The two-file memory contract (B5-P7), injected with the file texts. Ships as
- * `assets/deepseekgui-memory-files.md`.
+ * The two-file memory contract (B5-P7), injected with the file texts
+ * (`assets/qol-memory-files.md`, compiled into the bundle).
  * @returns The contract, trimmed of the trailing newline.
  */
 export function memoryContract(): string {
@@ -222,8 +220,6 @@ interface SystemPromptSeam {
 export type MemoryAssembleContext = {
   readonly agent?: { readonly session?: { readonly header?: { readonly cwd?: string; readonly id?: string } } }
 }
-
-/** Read DSH_HOME through the untyped env record (client env ambient types narrow process.env). */
 
 /**
  * Register the product guide and the memory context in the plugin scope.

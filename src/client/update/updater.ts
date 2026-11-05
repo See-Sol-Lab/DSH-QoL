@@ -17,6 +17,8 @@ export const RUNNING_VERSION = __DSH_QOL_VERSION__
 const PACKAGE = '@see-sol-lab/dsh-qol'
 const LATEST_URL = 'https://api.github.com/repos/See-Sol-Lab/DSH-QoL/releases/latest'
 const RELEASE_PREFIX = 'https://github.com/See-Sol-Lab/DSH-QoL/releases/download/'
+/** 只接受本仓库 Release 里本包的 tgz；版本段以 v 开头、不含 `/`，排除 `..` 这类路径。 */
+const RELEASE_ASSET = /^https:\/\/github\.com\/See-Sol-Lab\/DSH-QoL\/releases\/download\/v[\w.-]+\/see-sol-lab-dsh-qol-[\w.-]+\.tgz$/u
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
 const CHECK_TIMEOUT_MS = 15_000
 const LAST_CHECK_KEY = 'dsh-qol.update.lastCheck'
@@ -91,7 +93,7 @@ export function parseRelease(body: unknown): Release | undefined {
   if (typeof release?.tag_name !== 'string') return undefined
   const version = release.tag_name.replace(/^v/u, '')
   const url = release.assets?.map(asset => asset.browser_download_url)
-    .find((candidate): candidate is string => typeof candidate === 'string' && candidate.startsWith(RELEASE_PREFIX) && candidate.endsWith('.tgz'))
+    .find((candidate): candidate is string => typeof candidate === 'string' && RELEASE_ASSET.test(candidate))
   return url === undefined ? undefined : { version, url }
 }
 
@@ -217,8 +219,11 @@ export function createUpdater(remote: PluginManagerRemote, request: typeof fetch
       if (Number.isFinite(last) && Date.now() - last < CHECK_INTERVAL_MS && known !== null) {
         try {
           const release = JSON.parse(known) as Release
-          offer(release)
-          return
+          // 本地存储不是可信来源：不合格就当没存过，重新查。
+          if (RELEASE_ASSET.test(release.url)) {
+            offer(release)
+            return
+          }
         } catch { /* 存坏了就重新查 */ }
       }
       await check()

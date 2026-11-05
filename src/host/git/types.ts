@@ -125,14 +125,6 @@ export interface DiffResult {
 /** Which side of the index a diff reads. */
 export type DiffScope = 'staged' | 'unstaged'
 
-/** The configured commit author (`git var GIT_AUTHOR_IDENT`). */
-export interface AuthorIdentity {
-  /** The author name git would use. */
-  name: string
-  /** The author email git would use. */
-  email: string
-}
-
 /** The result of one guarded GUI commit (B4-P5). */
 export interface GitCommitResult {
   /** The new commit's full SHA. */

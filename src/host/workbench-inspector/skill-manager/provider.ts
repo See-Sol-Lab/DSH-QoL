@@ -34,37 +34,33 @@ export const MANAGED_RANK = 550
 export interface ManagedProviderOptions {
   /** Absolute library directory bound for this Harness generation. */
   libraryDir: string
-  /** Whether the delegate watches the library for changes. */
-  watch: boolean
   /**
    * The install ids the session's project selected; undefined when the cwd
    * resolves to no project (no folder, or the folder is gone).
    */
   enabledFor: (cwd: string, signal: AbortSignal | undefined) => Promise<readonly string[] | undefined>
-  /** Discovery seam for tests; production builds the official filesystem provider over the library. */
-  delegate?: Pick<SkillProvider, 'list' | 'get'>
 }
 
 /** Managed-library provider: official discovery, project-filtered. */
 export class ManagedSkillProvider implements SkillProvider {
   readonly name = MANAGED_PROVIDER_NAME
-  private readonly delegate: Pick<SkillProvider, 'list' | 'get'>
+  private readonly delegate: FileSystemSkillProvider
 
   /**
    * @param ctx - Host context (logger and optional filesystem service for the delegate).
    * @param control - The registration's control; the delegate's watcher invalidates through it.
-   * @param options - Library root, watch flag, and the selection lookup.
+   * @param options - Library root and the selection lookup.
    */
   constructor(ctx: Context, control: SkillProviderControl, private readonly options: ManagedProviderOptions) {
     // No default roots: the library is the only root, so the app's bundled
     // skills and the user roots never re-appear under this provider's name.
     // The delegate closes its own watchers when the registration's control
     // signal aborts, so this class has no disposal of its own.
-    this.delegate = options.delegate ?? new FileSystemSkillProvider(ctx, control, {
+    this.delegate = new FileSystemSkillProvider(ctx, control, {
       providerName: MANAGED_PROVIDER_NAME,
       includeDefaultRoots: false,
       customSkillDirs: [options.libraryDir],
-      watch: options.watch,
+      watch: true,
     })
   }
 

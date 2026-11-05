@@ -143,14 +143,13 @@ export async function applyWorkbench(ctx: Context): Promise<void> {
 
     // 删除已归档会话：官方的归档查看与恢复在侧栏筛选里，但没有删除。会话菜单的「删除」只对已归档的行
     // 出现，先确认；由 Host inspector 完成，只删已归档且没在加载的会话。
-    const deleteSession = createSessionDeleter(inspector)
+    const deleteSession = createSessionDeleter(inspector, () => ctx.locale.bind('dsh.qol.workbench')('sessionDelete.busy'))
     scoped.slots.inject('sidebar.workspaces.session.menu.item', () =>
       scoped.slots.register({
         name: 'sidebar.workspaces.session.menu.item',
         id: 'dsh-qol-delete',
         locale: 'dsh.qol.workbench',
         order: DELETE_MENU_ORDER,
-        inject: () => ({ deleteSession }),
       }, DeleteSessionMenuItem))
     scoped.slots.inject('shell.overlay', () =>
       scoped.slots.register({

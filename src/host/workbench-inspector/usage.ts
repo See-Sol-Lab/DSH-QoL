@@ -1,5 +1,5 @@
 /**
- * 用量与余额（移植自 DeepSeekGUI usage-service）：取数计划、官方响应判定、聚合，
+ * 用量（移植自 DeepSeekGUI usage-service）：取数计划、官方响应判定、聚合，
  * 以及插件后台带官方账号令牌直接请求开放平台（令牌只在 Host 里，不进界面）。
  * @module @see-sol-lab/dsh-qol/workbench-inspector/usage
  */
@@ -453,11 +453,11 @@ async function readGrant(credentials: UsageCredentials): Promise<{ token: string
  * @param credentials - 官方 credentials 服务。
  * @param locale - 界面语言（zh / en）。
  * @param signal - 调用方的中止信号。
- * @param nowMs - 当前时刻（测试注入）。
+ * @param nowMs - 当前时刻。
  * @returns 结果。
  */
 export async function fetchAccountUsage(
-  credentials: UsageCredentials, locale: 'zh' | 'en', signal: AbortSignal, nowMs = Date.now(),
+  credentials: UsageCredentials, locale: 'zh' | 'en', signal: AbortSignal, nowMs: number,
 ): Promise<WorkbenchUsage> {
   const tz = -new Date(nowMs).getTimezoneOffset() * 60
   const plan = planUsageFetch(nowMs, tz)

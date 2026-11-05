@@ -18,7 +18,7 @@ import {
   redactGitText,
 } from '@deepseek-ai/dsh-git'
 import type {
-  AuthorIdentity, CommitInfo, DiffResult, DiffScope, GitCommitResult, HeadState, PushApproval, PushOutcome, PushPreview,
+  CommitInfo, DiffResult, DiffScope, GitCommitResult, HeadState, PushApproval, PushOutcome, PushPreview,
   RemoteInfo, RepoIdentity, RepoStatus, UpstreamInfo, WorktreeInfo,
 } from '@deepseek-ai/dsh-git/types'
 import {
@@ -172,18 +172,6 @@ export class LocalGitCapability extends GitCapability {
     return parseWorktreePorcelain(output.stdout)
   }
 
-  async worktreeAdd(cwd: string, path: string, branch: string): Promise<void> {
-    await this.ensureUsable()
-    await this.repoIdentity(cwd)
-    await this.run(cwd, ['worktree', 'add', '-q', '-b', branch, path])
-  }
-
-  async worktreeRemove(cwd: string, path: string): Promise<void> {
-    await this.ensureUsable()
-    await this.repoIdentity(cwd)
-    await this.run(cwd, ['worktree', 'remove', path])
-  }
-
   async status(cwd: string): Promise<RepoStatus> {
     await this.ensureUsable()
     await this.repoIdentity(cwd)
@@ -224,13 +212,6 @@ export class LocalGitCapability extends GitCapability {
     // `git diff` output. The index operations re-apply these exact bytes.
     const patch = await this.run(cwd, [...command, '--binary', ...pathspec], { maxBytes: patchMaxBytes })
     return { files, patch: patch.stdout }
-  }
-
-  async applyIndexPatch(cwd: string, patch: string, reverse: boolean): Promise<void> {
-    await this.ensureUsable()
-    await this.repoIdentity(cwd)
-    const args = ['apply', '--cached', ...(reverse ? ['--reverse'] : []), '-']
-    await this.run(cwd, args, { stdin: patch })
   }
 
   async stageFile(cwd: string, path: string): Promise<void> {
@@ -290,35 +271,22 @@ export class LocalGitCapability extends GitCapability {
     await this.run(cwd, ['--literal-pathspecs', 'checkout', '--', path])
   }
 
-  async authorIdentity(cwd: string): Promise<AuthorIdentity | undefined> {
-    await this.ensureUsable()
-    await this.repoIdentity(cwd)
-    let output: string
-    try {
-      output = (await this.run(cwd, ['var', 'GIT_AUTHOR_IDENT'])).stdout.trim()
-    } catch (error) {
-      // A failed ident lookup (unconfigured user.name/user.email) is the
-      // definite "no identity" fact; spawn-level failures still propagate.
-      if (error instanceof GitCommandFailedError) return undefined
-      throw error
-    }
-    // `Name <email> 1234567890 +0800` — the name is everything before the
-    // first " <", the email the part between "<" and ">".
-    const open = output.lastIndexOf(' <')
-    const close = open === -1 ? -1 : output.indexOf('>', open)
-    if (open === -1 || close === -1) return undefined
-    const name = output.slice(0, open)
-    const email = output.slice(open + 2, close)
-    if (name === '' || email === '') return undefined
-    return { name, email }
-  }
-
   async stagedTree(cwd: string): Promise<string> {
     await this.ensureUsable()
     await this.repoIdentity(cwd)
     const oid = (await this.run(cwd, ['write-tree'])).stdout.trim()
     if (oid === '') throw new GitCommandFailedError(['git', 'write-tree'], cwd, null, 'write-tree reported no tree')
     return oid
+  }
+
+  /** Whether a commit would carry an author (`Name <email> 1234567890 +0800`); a failed lookup means none is configured. */
+  private async hasAuthorIdentity(cwd: string): Promise<boolean> {
+    try {
+      return /^.+ <[^>]+>/u.test((await this.run(cwd, ['var', 'GIT_AUTHOR_IDENT'])).stdout.trim())
+    } catch (error) {
+      if (error instanceof GitCommandFailedError) return false
+      throw error
+    }
   }
 
   async commit(cwd: string, message: string, expectedTree: string): Promise<GitCommitResult> {
@@ -333,7 +301,7 @@ export class LocalGitCapability extends GitCapability {
     if (staged.stdout === '') {
       throw new GitCommitRefusedError('empty-index')
     }
-    if ((await this.authorIdentity(cwd)) === undefined) {
+    if (!await this.hasAuthorIdentity(cwd)) {
       throw new GitCommitRefusedError('identity')
     }
     const actualTree = await this.stagedTree(cwd)

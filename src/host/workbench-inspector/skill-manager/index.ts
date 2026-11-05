@@ -11,7 +11,6 @@
  * @module @deepseek-ai/dsh-skill-manager
  */
 import { Service, type Context } from '@deepseek-ai/cordis'
-import Schema from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-preset-registry'
 import type { ScopeKey } from '@deepseek-ai/dsh-scope'
@@ -20,7 +19,7 @@ import type {} from '@deepseek-ai/dsh-session-query'
 import type { SkillCatalogSnapshot } from '@deepseek-ai/dsh-skill'
 import type {} from '@deepseek-ai/dsh-storage-domain'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
-import { applyImport, previewImport, resolveLibraryPaths, scanInventory, uninstallSkill, validInstallName, type LibraryOptions } from './library.ts'
+import { applyImport, previewImport, resolveLibraryPaths, scanInventory, uninstallSkill, validInstallName } from './library.ts'
 import { ManagedSkillProvider } from './provider.ts'
 import {
   buildProjectView,
@@ -48,42 +47,10 @@ import type {
 export type * from './types.ts'
 export { SKILL_MANIFEST_FILE, SKILL_MANIFEST_SCHEMA_VERSION } from './types.ts'
 export { resolveLibraryPaths } from './library.ts'
-export type { LibraryLimits, LibraryOptions, LibraryPaths } from './library.ts'
+export type { LibraryPaths } from './library.ts'
 export { MANAGED_PROVIDER_NAME, projectKeyOf, resolveProject, skillSelectionDomainSpec } from './selection.ts'
 export type { ProjectResolution } from './selection.ts'
 export { MANAGED_RANK, MANAGED_SOURCE } from './provider.ts'
-
-/** Default deployment bounds; the Config schema applies them, callers that construct a Config in TS spread them. */
-export const SKILL_MANAGER_LIMITS = {
-  maxZipBytes: 256 * 1024 * 1024,
-  maxFileBytes: 64 * 1024 * 1024,
-  maxTotalBytes: 512 * 1024 * 1024,
-  maxFiles: 4000,
-} as const
-
-/** Deployment bounds and optional location overrides. */
-export interface Config {
-  /** Explicit DSH home; defaults to `$DSH_HOME` or `~/.dsh`, re-read on every call. */
-  dshHome?: string
-  /** Explicit agents home for the read-only listing; defaults to `$DSH_AGENTS_HOME` or `~/.agents`. */
-  agentsHome?: string
-  /** Bundled skill root for the read-only listing; defaults to `$DSH_BUNDLED_SKILL_DIR`. */
-  bundledSkillDir?: string
-  /** Explicit library directory; defaults to `<DSH home>/deepseekgui/skills`. */
-  libraryDir?: string
-  /** Explicit staging directory; defaults to `<DSH home>/deepseekgui/skills-staging`. */
-  stagingDir?: string
-  /** Inclusive cap on an archive file. */
-  maxZipBytes: number
-  /** Inclusive cap on one file inside a source. */
-  maxFileBytes: number
-  /** Inclusive cap on all files of one source. */
-  maxTotalBytes: number
-  /** Inclusive cap on the number of files of one source. */
-  maxFiles: number
-  /** Whether the provider watches the library directory for changes made outside this service. */
-  watchLibrary: boolean
-}
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -95,20 +62,7 @@ declare module '@deepseek-ai/cordis' {
 /** Skill library queries, directory-complete installs, and the per-project selection. */
 export class SkillManager extends TypertRemoteService {
   static inject = ['typert', 'storageDomain', 'skills', 'sessionQuery']
-  static Config: Schema<Config> = Schema.object({
-    dshHome: Schema.string(),
-    agentsHome: Schema.string(),
-    bundledSkillDir: Schema.string(),
-    libraryDir: Schema.string(),
-    stagingDir: Schema.string(),
-    maxZipBytes: Schema.natural().min(1).default(SKILL_MANAGER_LIMITS.maxZipBytes),
-    maxFileBytes: Schema.natural().min(1).default(SKILL_MANAGER_LIMITS.maxFileBytes),
-    maxTotalBytes: Schema.natural().min(1).default(SKILL_MANAGER_LIMITS.maxTotalBytes),
-    maxFiles: Schema.natural().min(1).default(SKILL_MANAGER_LIMITS.maxFiles),
-    watchLibrary: Schema.boolean().default(true),
-  })
 
-  private readonly options: LibraryOptions
   /** Serializes writes: installs, uninstalls and selection saves never interleave. */
   private queue: Promise<unknown> = Promise.resolve()
   /** The selection table; every reader awaits `ready`, after which it is set. */
@@ -119,25 +73,9 @@ export class SkillManager extends TypertRemoteService {
   /** Invalidates the registry catalog; the provider registration in the constructor sets it. */
   private invalidateCatalog!: () => void
 
-  /**
-   * @param ctx - Composed host providers.
-   * @param config - Validated bounds and overrides.
-   */
-  constructor(ctx: Context, config: Config) {
+  /** @param ctx - Composed host providers. */
+  constructor(ctx: Context) {
     super(ctx, 'skillManager', { namespace: 'skillManager' })
-    this.options = {
-      ...config.dshHome === undefined ? {} : { dshHome: config.dshHome },
-      ...config.agentsHome === undefined ? {} : { agentsHome: config.agentsHome },
-      ...config.bundledSkillDir === undefined ? {} : { bundledSkillDir: config.bundledSkillDir },
-      ...config.libraryDir === undefined ? {} : { libraryDir: config.libraryDir },
-      ...config.stagingDir === undefined ? {} : { stagingDir: config.stagingDir },
-      limits: {
-        maxZipBytes: config.maxZipBytes,
-        maxFileBytes: config.maxFileBytes,
-        maxTotalBytes: config.maxTotalBytes,
-        maxFiles: config.maxFiles,
-      },
-    }
     this.ready = new Promise((resolve) => { this.markReady = resolve })
     // The library root is bound for this Harness generation: a switched DSH
     // home restarts the Harness, so the provider never has to re-root.
@@ -146,7 +84,6 @@ export class SkillManager extends TypertRemoteService {
       this.invalidateCatalog = control.invalidate
       return new ManagedSkillProvider(ctx, control, {
         libraryDir,
-        watch: config.watchLibrary,
         enabledFor: async (cwd) => {
           await this.ready
           const resolution = await resolveProject(cwd)
@@ -172,7 +109,7 @@ export class SkillManager extends TypertRemoteService {
 
   /** Absolute library directory for the current environment. */
   get libraryDir(): string {
-    return resolveLibraryPaths(this.options).libraryDir
+    return resolveLibraryPaths().libraryDir
   }
 
   /**
@@ -183,7 +120,7 @@ export class SkillManager extends TypertRemoteService {
   @Remote
   async inventory(signal: AbortSignal): Promise<SkillInventory> {
     signal.throwIfAborted()
-    return await scanInventory(this.options)
+    return await scanInventory()
   }
 
   /**
@@ -195,7 +132,7 @@ export class SkillManager extends TypertRemoteService {
   @Remote
   async previewImport(path: string, signal: AbortSignal): Promise<SkillImportPreview> {
     signal.throwIfAborted()
-    return await previewImport(this.options, path)
+    return await previewImport(path)
   }
 
   /**
@@ -207,7 +144,7 @@ export class SkillManager extends TypertRemoteService {
   @Remote
   async applyImport(request: SkillImportRequest, signal: AbortSignal): Promise<SkillImportOutcome> {
     signal.throwIfAborted()
-    return await this.serialized(() => applyImport(this.options, request, (change) => { this.changed(change) }))
+    return await this.serialized(() => applyImport(request, (change) => { this.changed(change) }))
   }
 
   /**
@@ -222,7 +159,7 @@ export class SkillManager extends TypertRemoteService {
     signal.throwIfAborted()
     await this.ready
     return await this.serialized(async () => {
-      const outcome = await uninstallSkill(this.options, installId, (change) => { this.changed(change) })
+      const outcome = await uninstallSkill(installId, (change) => { this.changed(change) })
       return { ...outcome, affected: referencesTo(this.table(), installId) }
     })
   }
@@ -280,7 +217,7 @@ export class SkillManager extends TypertRemoteService {
     }
     const project = resolution.project
     const result = await this.serialized(async () => {
-      const inventory = await scanInventory(this.options)
+      const inventory = await scanInventory()
       return await saveSelection(this.table(), {
         project,
         enabled: request.enabled,
@@ -339,7 +276,7 @@ export class SkillManager extends TypertRemoteService {
 
   private async viewFor(sessionId: SessionId, session: SessionFacts, signal: AbortSignal): Promise<SkillProjectView> {
     const resolution: ProjectResolution = await resolveProject(session.cwd)
-    const inventory = await scanInventory(this.options)
+    const inventory = await scanInventory()
     const record = resolution.project === null ? undefined : this.table().get(resolution.project.key)
     let catalog: SkillCatalogSnapshot | undefined
     if (resolution.project !== null) {

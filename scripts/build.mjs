@@ -8,7 +8,7 @@
 // 自注册形状，factory 拿到 loader 的 require。所以先打成 CommonJS（react 外置，
 // 留成 require('react')），再包上这层外壳写进 lib/client.js。
 import { build } from 'esbuild'
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, rm, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -33,6 +33,9 @@ const resolveOwn = {
       : { path: args.path, external: true })
   },
 }
+
+// chunk 文件名带内容哈希，不清空的话旧 chunk 会一直留在发布包里。
+await rm(join(root, 'lib'), { recursive: true, force: true })
 
 await build({
   absWorkingDir: root,

@@ -6,16 +6,10 @@
  * 只对已归档的会话出现：归档是「我不要它了」的那一步，删除是同一条路的
  * 终点；没归档的会话误点一下就没了不合适。
  *
- * 官方 harness 从持久化到 RPC 都没有会话删除，所以真正动盘的是 DeepSeekGUI
- * 主进程的回环控制桥（session-delete 命令：先让 Harness 从列表里忘掉它、
- * 再删文件）。桥的地址和一次性凭证在页面 URL 的 query 里，所以：
- *
- * - 这一项只在 DeepSeekGUI 自己开的窗口里存在。用外部浏览器连同一个
- *   harness，归档照看照恢复，但没有删除入口——删盘上的数据是桌面宿主的
- *   权限，不是任何能连上 harness 的页面的权限。
- * - 行消失是因为会话离开了会话列表（主进程先广播 api-session/removed），
- *   不是这个组件把它藏起来。组件自己不记「删过谁」，所以不会留幽灵行
- *   （2026-09-11 人工测试 #20 / #21 的教训）。
+ * 官方 harness 从持久化到 RPC 都没有会话删除，真正动盘的是 Host inspector。
+ * 行消失是因为会话离开了会话列表（Host 广播 api-session/removed），不是这个
+ * 组件把它藏起来。组件自己不记「删过谁」，所以不会留幽灵行（2026-09-11 人工
+ * 测试 #20 / #21 的教训）。
  *
  * 菜单项点完菜单就没了，确认对话框因此挂在 shell.overlay 上：它要活得比
  * 它所在的那个菜单久。两者之间靠这个模块里的一个待确认槽位通信。
@@ -59,41 +53,40 @@ export type SessionDeleter = (sessionId: string) => Promise<void>
 
 /**
  * DSH-QoL：用 Host inspector 的 deleteSession 删除（只删已归档、没在加载的会话）。
- * DeepSeekGUI 原来经桌面控制通道交给主进程。
  * @param inspector - workbenchInspector 远程客户端。
+ * @param busyMessage - 会话还在加载、暂时不能删时给用户看的话。
  * @returns 删除函数。
  */
-export function createSessionDeleter(inspector: InspectorRemote): SessionDeleter {
+export function createSessionDeleter(inspector: InspectorRemote, busyMessage: () => string): SessionDeleter {
   return async (sessionId: string): Promise<void> => {
-    const result = await inspector.deleteSession(sessionId as SessionId, 'dsh-qol')
-    if (!result.ok) throw new Error(result.error.message)
+    const result = await inspector.deleteSession(sessionId as SessionId)
+    if (!result.ok) throw new Error((result.error.code as string) === 'workbench/session-busy' ? busyMessage() : result.error.message)
   }
 }
 
-/** 注入面：删除通道本身。默认从页面 URL 读桥，测试可以塞一个假的。 */
+/** 注入面：删除通道本身。 */
 export interface DeleteSessionInjected {
-  /** 删除一个会话的数据；null = 这个页面删不了（不是 DeepSeekGUI 窗口）。 */
-  deleteSession: SessionDeleter | null
+  /** 删除一个会话的数据。 */
+  deleteSession: SessionDeleter
 }
 
 /** 行菜单项的 props。 */
 export type DeleteSessionMenuItemProps =
   PropsRuntime<'sidebar.workspaces.session.menu.item'>
   & PropsLocale<'dsh.qol.workbench'>
-  & DeleteSessionInjected
 
 /**
  * 行菜单项（order 500，排在归档之后）：只对已归档的行出现。
- * @param props - 行的 owner 份额、菜单开合状态、文案座位与删除通道。
+ * @param props - 行的 owner 份额、菜单开合状态与文案座位。
  * @returns 菜单里的一行；不适用时不渲染。
  */
 export function DeleteSessionMenuItem({
-  sessionId, displayTitle, useMenuOpenState, useWorkspaces, deleteSession, t,
+  sessionId, displayTitle, useMenuOpenState, useWorkspaces, t,
 }: DeleteSessionMenuItemProps) {
   const [, setMenuOpen] = useMenuOpenState()
   // DSH-QoL：官方 hook 的类型链引用了不在 npm 上的 dsh-client-runtime，这里标出所需形状。
   const archived = useWorkspaces((state: { archivedSessionIds: readonly SessionId[] }) => state.archivedSessionIds.includes(sessionId as SessionId))
-  if (deleteSession === null || !archived) return null
+  if (!archived) return null
   return (
     <MenuItemButton
       icon={<IconTrashOutlineRegular size={14} />}
@@ -120,7 +113,7 @@ export type DeleteSessionDialogProps =
  */
 export function DeleteSessionDialog({ deleteSession, t }: DeleteSessionDialogProps) {
   const request = useSyncExternalStore(pendingStore.subscribe, pendingStore.snapshot, pendingStore.snapshot)
-  if (request === null || deleteSession === null) return null
+  if (request === null) return null
   return <DeleteConfirmForm key={request.sessionId} request={request} deleteSession={deleteSession} t={t} />
 }
 

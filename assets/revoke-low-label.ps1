@@ -1,11 +1,11 @@
 # DSH 生活质量包：撤掉官方沙箱留在工作区根目录上的三样东西。
 #   1) 沙箱能力身份 S-1-4-<n>-<n> 的写入授权（官方的工作区 SID 形状）
-#   2) Everyone 的拒绝条目（官方加的「禁止删除子项」）
+#   2) Everyone 的「禁止删除子项」拒绝条目（只认官方这一条，用户自己设的其他拒绝不动）
 #   3) Low 完整性标签 → 改回 Medium（普通程序的默认级别）
 # 其他权限原样保留。只处理根目录上「显式」的这几样；子项都是继承来的，根改了就跟着变。
 # 没有标记就什么都不做（不重算整棵目录树）。动手前先 icacls /save 备份根目录权限，
 # 可用 `icacls <根目录的上一级> /restore <备份文件>` 还原。
-# 方法来自 2026-09 清理 E:\Priest 的实测脚本；Windows PowerShell 5.1 与 7 都能跑。
+# 方法来自 2026-09 清理 E:\Priest 的实测脚本；由系统自带的 Windows PowerShell 5.1 运行。
 # 一次进程处理全部工作区（Host 退出时少等几次 PowerShell 启动），每个工作区输出一行 JSON。
 param(
   [Parameter(Mandatory = $true)][string]$BackupDir,
@@ -21,15 +21,13 @@ function Revoke([string]$Root) {
   try {
     if (-not (Test-Path -LiteralPath $Root -PathType Container)) { throw "not a directory: $Root" }
     $dir = Get-Item -LiteralPath $Root
-    $sections = [System.Security.AccessControl.AccessControlSections]::Access
-    $hasMethod = $null -ne ($dir | Get-Member -Name GetAccessControl -MemberType Method)
-    if ($hasMethod) { $acl = $dir.GetAccessControl('Access') }
-    else { $acl = [System.IO.FileSystemAclExtensions]::GetAccessControl($dir, $sections) }
+    $acl = $dir.GetAccessControl('Access')
 
     $everyone = New-Object System.Security.Principal.SecurityIdentifier 'S-1-1-0'
     $explicit = @($acl.GetAccessRules($true, $false, [System.Security.Principal.SecurityIdentifier]))
     $sandboxSids = @($explicit | Where-Object { $_.AccessControlType -eq 'Allow' -and $_.IdentityReference.Value -match '^S-1-4-\d+-\d+$' } | ForEach-Object { $_.IdentityReference.Value } | Sort-Object -Unique)
-    $denies = @($explicit | Where-Object { $_.AccessControlType -eq 'Deny' -and $_.IdentityReference -eq $everyone })
+    $deleteChild = [System.Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles
+    $denies = @($explicit | Where-Object { $_.AccessControlType -eq 'Deny' -and $_.IdentityReference -eq $everyone -and $_.FileSystemRights -eq $deleteChild })
     # 根目录上显式的 Low 标签（继承来的会带 (I)，那是上级目录的事，不在这里改）。
     $lowLines = @(& icacls $Root | Where-Object { $_ -match 'Mandatory Label\\Low Mandatory Level' })
     $label = @($lowLines | Where-Object { $_ -notmatch '\(I\)' }).Count -gt 0
@@ -44,8 +42,7 @@ function Revoke([string]$Root) {
       if ($sandboxSids.Count -gt 0 -or $denies.Count -gt 0) {
         foreach ($sid in $sandboxSids) { $acl.PurgeAccessRules((New-Object System.Security.Principal.SecurityIdentifier $sid)) }
         foreach ($rule in $denies) { [void]$acl.RemoveAccessRuleSpecific($rule) }
-        if ($hasMethod) { $dir.SetAccessControl($acl) }
-        else { [System.IO.FileSystemAclExtensions]::SetAccessControl($dir, $acl) }
+        $dir.SetAccessControl($acl)
         $result.removedSids = $sandboxSids
         $result.denyRemoved = $denies.Count
       }

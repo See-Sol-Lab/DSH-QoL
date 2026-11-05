@@ -6,7 +6,6 @@ import type {} from '@deepseek-ai/dsh-fs'
 import type { FsTarget } from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-git'
 import type { DiffResult, DiffScope } from '@deepseek-ai/dsh-git/types'
-import Schema from '@deepseek-ai/schemastery'
 import { dshHome } from '../home.ts'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { fetchAccountUsage, type UsageCredentials } from './usage.ts'
@@ -23,13 +22,10 @@ import { projectMemoryFileName, type WorkbenchFileText, type WorkbenchGlobalMemo
 export type * from './types.ts'
 export { projectMemoryFileName } from './types.ts'
 
-/** Deployment bounds for inspection responses. */
-export interface Config {
-  /** Newest commits returned by the overview. */
-  logLimit: number
-  /** Inclusive UTF-8 byte limit for file text and Git patches. */
-  maxTextBytes: number
-}
+/** Newest commits returned by the overview. */
+const LOG_LIMIT = 30
+/** Inclusive UTF-8 byte limit for file text and Git patches. */
+const MAX_TEXT_BYTES = 512 * 1024
 
 /** Whether two git-reported paths name the same directory (git prints forward slashes; Windows is case-insensitive). */
 function samePath(left: string, right: string): boolean {
@@ -55,7 +51,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
      * from a failed read by this code.
      */
     'workbench/not-a-repository': { readonly cwd: string }
-    /** DSH-QoL：功能依赖 DeepSeekGUI 对官方的改动，官方桌面端里不可用。 */
+    /** DSH-QoL：不满足操作条件（比如删除的会话没有归档）。 */
     'workbench/unsupported': Record<string, never>
     /** DSH-QoL：保存记忆时文件已被别处改过（助手或其他编辑器），需刷新后再改。 */
     'workbench/memory-changed': { readonly path: string }
@@ -67,16 +63,9 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 /** Read-only workspace inspection plus desktop-authorized Session deletion. */
 export class WorkbenchInspector extends TypertRemoteService {
   static inject = ['fs', 'git', 'typert', 'sessionQuery']
-  static Config: Schema<Config> = Schema.object({
-    logLimit: Schema.natural().min(1).default(30),
-    maxTextBytes: Schema.natural().min(1).default(512 * 1024),
-  })
 
-  /**
-   * @param ctx - Composed host providers.
-   * @param config - Validated response bounds.
-   */
-  constructor(ctx: Context, private readonly config: Config) {
+  /** @param ctx - Composed host providers. */
+  constructor(ctx: Context) {
     super(ctx, 'workbenchInspector', { namespace: 'workbenchInspector' })
     // DSH-QoL：删除已归档会话要看归档集合与当前加载的会话；都按可选依赖读，缺了就拒绝删除。
     ctx.inject(['workspaceRegistry'], (registryCtx) => {
@@ -183,7 +172,7 @@ export class WorkbenchInspector extends TypertRemoteService {
     let bytes = 0
     for await (const chunk of await this.ctx.fs.streamText(target, signal)) {
       bytes += Buffer.byteLength(chunk)
-      if (bytes > this.config.maxTextBytes) throw new Error('file exceeds the configured text inspection limit')
+      if (bytes > MAX_TEXT_BYTES) throw new Error('file exceeds the configured text inspection limit')
       text += chunk
     }
     return text
@@ -308,25 +297,21 @@ export class WorkbenchInspector extends TypertRemoteService {
     signal.throwIfAborted()
     const root = (await this.repoIdentity(await this.cwd(sessionId, signal))).root
     if (path !== '') await this.target(root, path, signal)
-    const value = await this.ctx.git.diff(root, scope, path === '' ? undefined : path, true, this.config.maxTextBytes)
+    const value = await this.ctx.git.diff(root, scope, path === '' ? undefined : path, true, MAX_TEXT_BYTES)
     signal.throwIfAborted()
     return value
   }
 
   /**
-   * Delegate authorized deletion to the Session owner, waiting for active work.
-   * @param sessionId - Session selected by the desktop user.
-   * @param signature - Desktop authorization bound to Home and Session ID.
+   * Delete one archived Session that is not loaded.
+   * @param sessionId - Session selected by the user.
    * @returns Completion of content deletion and its client announcement.
    */
   @Remote
-  async deleteSession(sessionId: SessionId, signature: string): Promise<void> {
-    // DSH-QoL：DeepSeekGUI 的删除改在官方 session-controller / 持久化层里，官方原版没有
-    // 删除接口。这里只做最窄的一条路：只删「已归档、当前没被加载」的会话，在会话存储里
-    // 精确找到以会话 id 命名的目录后整个删掉，再发官方的 api-session/removed 让浏览器的
-    // 会话列表移除它；官方搜索索引下次与磁盘比对时自己清掉条目。signature 不再使用
-    // （GUI 用它做桌面授权），保留是为对上生成的远程接口描述。
-    void signature
+  async deleteSession(sessionId: SessionId): Promise<void> {
+    // DSH-QoL：官方没有删除接口。这里只做最窄的一条路：只删「已归档、当前没被加载」的会话，
+    // 在会话存储里精确找到以会话 id 命名的目录后整个删掉，再发官方的 api-session/removed
+    // 让浏览器的会话列表移除它；官方搜索索引下次与磁盘比对时自己清掉条目。
     const registry = this.registry
     if (registry === undefined || !registry.archivedSessionIds.includes(sessionId)) {
       throw new RemoteError('workbench/unsupported', 'only an archived session can be deleted', {})
@@ -336,9 +321,10 @@ export class WorkbenchInspector extends TypertRemoteService {
     }
     const home = dshHome()
     const directory = findSessionDirectory(join(home, 'sessions'), sessionId)
-    // 先从官方归档集合里拿掉（官方没有「忘掉某个 id」，取消归档是唯一的写法）；失败不挡删除。
-    try { await registry.unarchiveSession(sessionId) } catch { /* 留在归档集合里也无害：读不到会话就跳过 */ }
     rmSync(directory, { recursive: true, force: false })
+    // 删成功才从官方归档集合里拿掉（官方没有「忘掉某个 id」，取消归档是唯一的写法）：删失败时会话还是已归档，
+    // 不会冒回列表。这一步失败无害，留在归档集合里的 id 读不到会话就跳过。
+    try { await registry.unarchiveSession(sessionId) } catch { /* 见上 */ }
     // 官方会话投影缓存里这个会话的那一份（只读缓存，删掉无害）。
     rmSync(join(home, 'storages', 'session_projcache', 'sessions', `${sessionId}.json`), { force: true })
     this.ctx.emit('api-session/removed', sessionId)
@@ -360,7 +346,7 @@ export class WorkbenchInspector extends TypertRemoteService {
     const [status, remotes, commits, trees] = await Promise.all([
       this.ctx.git.status(identity.root),
       this.ctx.git.remotes(identity.root),
-      this.ctx.git.log(identity.root, this.config.logLimit),
+      this.ctx.git.log(identity.root, LOG_LIMIT),
       this.ctx.git.worktrees(identity.root),
     ])
     signal.throwIfAborted()
@@ -384,9 +370,6 @@ export class WorkbenchInspector extends TypertRemoteService {
     return { root: identity.root, status, remotes, commits, worktrees }
   }
 }
-
-/** DSH_HOME（宿主进程的环境变量）。 */
-
 
 /**
  * DSH-QoL：在官方会话存储里找到一个会话的目录：`<root>/<工作区编码>/<sessionId>/`。

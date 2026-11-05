@@ -4,11 +4,11 @@
 
 import { Context, Service } from '@deepseek-ai/cordis'
 import type {
-  AuthorIdentity, CommitInfo, DiffResult, DiffScope, HeadState, RepoIdentity, RepoStatus, UpstreamInfo, WorktreeInfo,
+  CommitInfo, DiffResult, DiffScope, HeadState, RepoIdentity, RepoStatus, UpstreamInfo, WorktreeInfo,
 } from './types.ts'
 
 export type {
-  AuthorIdentity, CommitInfo, DiffFileSummary, DiffResult, DiffScope, GitCommitResult, HeadState, PushOutcome,
+  CommitInfo, DiffFileSummary, DiffResult, DiffScope, GitCommitResult, HeadState, PushOutcome,
   PushApproval, PushPreview, RemoteInfo, RepoIdentity, RepoStatus, StatusCode, StatusEntry, UpstreamInfo, WorktreeInfo,
 } from './types.ts'
 import type { GitCommitResult, PushApproval, PushOutcome, PushPreview, RemoteInfo } from './types.ts'
@@ -257,27 +257,6 @@ export abstract class GitCapability extends Service {
   abstract worktrees(cwd: string): Promise<WorktreeInfo[]>
 
   /**
-   * Create a work tree with a new branch (`git worktree add -b <branch>
-   * <path>`). The path must not exist and must not already be registered; a
-   * branch name that already exists fails with `GitCommandFailedError` (the
-   * raw stderr names it). This is the ONLY work-tree write the seam offers.
-   * @param cwd - Working directory inside the repository.
-   * @param path - Absolute path for the new work tree.
-   * @param branch - New branch to create and check out there.
-   * @returns resolution after the work tree exists.
-   */
-  abstract worktreeAdd(cwd: string, path: string, branch: string): Promise<void>
-
-  /**
-   * Remove a registered work tree (`git worktree remove <path>`). Git itself
-   * refuses a dirty work tree; the caller decides which checks run first.
-   * @param cwd - Working directory inside the repository.
-   * @param path - Absolute path of the work tree to remove.
-   * @returns resolution after the work tree is removed.
-   */
-  abstract worktreeRemove(cwd: string, path: string): Promise<void>
-
-  /**
    * The complete read-only work-tree state.
    * @param cwd - Working directory inside the repository.
    * @returns clean/dirty facts and every changed path (staged, unstaged,
@@ -320,22 +299,6 @@ export abstract class GitCapability extends Service {
   ): Promise<DiffResult>
 
   /**
-   * Apply one patch to the INDEX only (B4-P4 hunk stage/unstage). The patch
-   * must be a git-diff fact (the caller hands back the exact bytes `diff`
-   * produced, or a hunk subset of them); it is delivered through the
-   * subprocess stdin, never via a shell string or a temp file. `reverse`
-   * applies the patch in reverse (unstage: index back toward HEAD). Git
-   * itself validates the context against the current index, so a stale hunk
-   * or an externally modified index fails with `GitCommandFailedError` and
-   * the raw stderr. Nothing else is written: the work tree is untouched.
-   * @param cwd - Working directory inside the repository.
-   * @param patch - The unified patch bytes (git-diff format).
-   * @param reverse - Apply the patch in reverse.
-   * @returns resolution after the index was updated.
-   */
-  abstract applyIndexPatch(cwd: string, patch: string, reverse: boolean): Promise<void>
-
-  /**
    * Stage one whole path into the index (`git add -- <path>`). Works for
    * tracked modifications, renames, and untracked files alike; binary files
    * need no special handling. Staging an untracked file is allowed — B4 only
@@ -373,15 +336,6 @@ export abstract class GitCapability extends Service {
    * @returns resolution after the work tree was restored.
    */
   abstract revertFile(cwd: string, path: string, expectedPatch?: string): Promise<void>
-
-  /**
-   * The configured commit author (`git var GIT_AUTHOR_IDENT`), or `undefined`
-   * when no identity is configured (the command fails). This is the identity
-   * a commit would actually carry, including environment overrides.
-   * @param cwd - Working directory inside the repository.
-   * @returns the name and email, or `undefined` when unconfigured.
-   */
-  abstract authorIdentity(cwd: string): Promise<AuthorIdentity | undefined>
 
   /**
    * The index's current tree oid (`git write-tree`): the snapshot a caller

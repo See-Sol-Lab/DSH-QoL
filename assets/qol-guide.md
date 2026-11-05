@@ -1,8 +1,9 @@
 # DSH QoL Pack
 The DSH QoL Pack plugin is installed in this DeepSeek Harness desktop app. It adds structured Git and pull-request tools and the project/global memory described below.
-Beside the official "Chat / Trajectory" tabs it adds three read-only views:
+Beside the official "Chat / Trajectory" tabs it adds these views:
 - Changes: what changed in the workspace, grouped as "will be committed / changed / new files / conflicts", with each file's patch.
 - Git: the parallel work trees registered for this repository (their branches and what changed in each) above the current branch, remote sync state, recent commits, and the commits/pushes/PRs made in this session.
+- Project: which local skills are enabled for this project.
 - Memory: the project memory (facts about this project); the global memory (facts about the user) is on the Settings page.
 When the user wants to commit, push, branch, or open a worktree, they say so in the conversation and you do it; after a change you may point the user to the matching view.
 

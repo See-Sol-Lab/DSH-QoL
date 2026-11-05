@@ -18,6 +18,8 @@ assert.deepEqual(parseRelease({ tag_name: 'v1.2.0', assets: [{ browser_download_
 // 链接不在本仓库 Release 下一律不认。
 assert.equal(parseRelease({ tag_name: 'v9.0.0', assets: [{ browser_download_url: 'https://evil.example/x.tgz' }] }), undefined)
 assert.equal(parseRelease({ tag_name: 'v9.0.0', assets: [{ browser_download_url: `${prefix}v9/x.exe` }] }), undefined)
+assert.equal(parseRelease({ tag_name: 'v9.0.0', assets: [{ browser_download_url: `${prefix}../../../evil/see-sol-lab-dsh-qol-9.0.0.tgz` }] }), undefined)
+assert.equal(parseRelease({ tag_name: 'v9.0.0', assets: [{ browser_download_url: `${prefix}v9.0.0/other.tgz` }] }), undefined)
 assert.equal(parseRelease(null), undefined)
 
 assert.equal(failureDetail({ application: 'failed', packageResult: { output: '[ERROR] fetch failed\nTypeError: x\n    at a (b)\n' } }), '[ERROR] fetch failed\nTypeError: x')
@@ -49,6 +51,14 @@ await updater.start(true)
 assert.equal(updater.state().phase, 'available')
 await updater.install(updater.state().release)
 assert.deepEqual(updater.state(), { phase: 'restart', version: '1.2.0' })
+
+// 本地缓存里的链接不可信：不合格就重新查，不会拿去安装。
+store.clear()
+store.set('dsh-qol.update.lastCheck', String(Date.now()))
+store.set('dsh-qol.update.release', JSON.stringify({ version: '9.0.0', url: 'https://evil.example/see-sol-lab-dsh-qol-9.0.0.tgz' }))
+updater = createUpdater(remote(released), github)
+await updater.start(true)
+assert.equal(updater.state().release.url, url)
 
 // 磁盘上已经是新版、运行的还是旧版：提示重启。
 store.clear()

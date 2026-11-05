@@ -10,6 +10,7 @@ export const zh = {
   'sessionDelete.cancel': '取消',
   'sessionDelete.close': '关闭',
   'sessionDelete.pending': '正在删除…',
+  'sessionDelete.busy': '这个会话这次运行时打开过，还在加载中。重启 DSH 后再删除。',
 } as const
 
 /** The workbench namespace key union. */
@@ -25,4 +26,5 @@ export const en = {
   'sessionDelete.cancel': 'Cancel',
   'sessionDelete.close': 'Close',
   'sessionDelete.pending': 'Deleting…',
+  'sessionDelete.busy': 'This session was opened during this run and is still loaded. Restart DSH, then delete it.',
 } satisfies Record<WorkbenchKey, string>

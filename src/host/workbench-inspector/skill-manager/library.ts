@@ -51,34 +51,15 @@ const SKIPPED_DIRECTORIES = new Set(['.git'])
 const INSTALL_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}$/u
 
 /** Size and count bounds for one import. */
-export interface LibraryLimits {
+const LIMITS = {
   /** Inclusive cap on the archive file itself. */
-  maxZipBytes: number
+  maxZipBytes: 256 * 1024 * 1024,
   /** Inclusive cap on one file inside a source. */
-  maxFileBytes: number
+  maxFileBytes: 64 * 1024 * 1024,
   /** Inclusive cap on all files of one source. */
-  maxTotalBytes: number
+  maxTotalBytes: 512 * 1024 * 1024,
   /** Inclusive cap on the number of files of one source. */
-  maxFiles: number
-}
-
-/** Where the library lives and how it is bounded. */
-export interface LibraryOptions {
-  /** Explicit DSH home; defaults to `$DSH_HOME` or `~/.dsh`, resolved on every call. */
-  dshHome?: string
-  /** Explicit agents home; defaults to `$DSH_AGENTS_HOME` or `~/.agents`. */
-  agentsHome?: string
-  /** Bundled skill root; defaults to `$DSH_BUNDLED_SKILL_DIR`. */
-  bundledSkillDir?: string
-  /** Explicit library directory; defaults to `<DSH home>/deepseekgui/skills`. */
-  libraryDir?: string
-  /** Explicit staging directory; defaults to `<DSH home>/deepseekgui/skills-staging`. */
-  stagingDir?: string
-  limits: LibraryLimits
-  /** Clock for manifest timestamps. */
-  now?: () => Date
-  /** Eight lowercase hex characters for new install ids. */
-  randomHex?: () => string
+  maxFiles: 4000,
 }
 
 /** Resolved locations for one call. */
@@ -92,19 +73,17 @@ export interface LibraryPaths {
 
 /**
  * Resolve the library locations for the current environment.
- * @param options - library options.
  * @returns absolute paths.
  */
-export function resolveLibraryPaths(options: LibraryOptions): LibraryPaths {
-  const dshHome = resolveDshHome(options.dshHome)
-  const agentsHome = resolve(options.agentsHome ?? process.env.DSH_AGENTS_HOME ?? join(homedir(), '.agents'))
-  const bundled = options.bundledSkillDir ?? process.env.DSH_BUNDLED_SKILL_DIR
+export function resolveLibraryPaths(): LibraryPaths {
+  const dshHome = resolveDshHome()
+  const bundled = process.env.DSH_BUNDLED_SKILL_DIR
   return {
     dshHome,
-    agentsHome,
+    agentsHome: resolve(process.env.DSH_AGENTS_HOME ?? join(homedir(), '.agents')),
     bundledSkillDir: bundled === undefined ? undefined : resolve(bundled),
-    libraryDir: resolve(options.libraryDir ?? join(dshHome, ...LIBRARY_SEGMENTS)),
-    stagingDir: resolve(options.stagingDir ?? join(dshHome, ...STAGING_SEGMENTS)),
+    libraryDir: resolve(dshHome, ...LIBRARY_SEGMENTS),
+    stagingDir: resolve(dshHome, ...STAGING_SEGMENTS),
   }
 }
 
@@ -139,11 +118,10 @@ interface ResolvedCandidate {
 
 /**
  * List the library, the orphans beside it, and the read-only roots.
- * @param options - library options.
  * @returns the inventory.
  */
-export async function scanInventory(options: LibraryOptions): Promise<SkillInventory> {
-  const paths = resolveLibraryPaths(options)
+export async function scanInventory(): Promise<SkillInventory> {
+  const paths = resolveLibraryPaths()
   const installed: SkillInstalledView[] = []
   const orphans: string[] = []
   for (const entry of await readdirSafe(paths.libraryDir)) {
@@ -185,13 +163,12 @@ export async function validInstallName(libraryDir: string, installId: string): P
 
 /**
  * Review a source without writing anything.
- * @param options - library options.
  * @param sourcePath - directory, `.zip`, or `.md` the user picked.
  * @returns the candidates found and the problems with the source.
  */
-export async function previewImport(options: LibraryOptions, sourcePath: string): Promise<SkillImportPreview> {
-  const tree = await loadSource(sourcePath, options.limits)
-  const inventory = await scanInventory(options)
+export async function previewImport(sourcePath: string): Promise<SkillImportPreview> {
+  const tree = await loadSource(sourcePath)
+  const inventory = await scanInventory()
   const candidates = await findCandidates(tree, inventory.installed)
   const problems = [...tree.problems]
   // A source that produced no files already carries the problem that explains it.
@@ -204,32 +181,30 @@ export async function previewImport(options: LibraryOptions, sourcePath: string)
 /**
  * Install the selected candidates of a source. Selections are independent:
  * one failure does not undo another selection's install.
- * @param options - library options.
  * @param request - source path and reviewed selections.
  * @param changed - called after each successful library change.
  * @returns what installed and what did not.
  */
 export async function applyImport(
-  options: LibraryOptions,
   request: SkillImportRequest,
   changed: (change: SkillLibraryChange) => void,
 ): Promise<SkillImportOutcome> {
   const outcome: SkillImportOutcome = { installed: [], failures: [] }
-  const tree = await loadSource(request.path, options.limits)
+  const tree = await loadSource(request.path)
   const incomplete = tree.problems.find(issue => issue.code === 'too-large' || issue.code === 'too-many-files')
   if (incomplete !== undefined) {
     outcome.failures = request.selections.map(selection => ({ key: selection.key, issue: incomplete }))
     return outcome
   }
   for (const selection of request.selections) {
-    const inventory = await scanInventory(options)
+    const inventory = await scanInventory()
     const candidates = await findCandidates(tree, inventory.installed)
     const candidate = candidates.find(item => item.view.key === selection.key)
     if (candidate === undefined) {
       outcome.failures.push({ key: selection.key, issue: { code: 'candidate-missing', message: `no candidate "${selection.key}" in the source` } })
       continue
     }
-    const result = await installCandidate(options, tree, candidate, selection, inventory.installed)
+    const result = await installCandidate(tree, candidate, selection, inventory.installed)
     if ('issue' in result) {
       outcome.failures.push({ key: selection.key, issue: result.issue })
       continue
@@ -242,17 +217,15 @@ export async function applyImport(
 
 /**
  * Remove one managed install.
- * @param options - library options.
  * @param installId - directory name under the library.
  * @param changed - called when the directory was removed.
  * @returns the outcome; refusals carry an issue and remove nothing.
  */
 export async function uninstallSkill(
-  options: LibraryOptions,
   installId: string,
   changed: (change: SkillLibraryChange) => void,
 ): Promise<LibraryUninstallOutcome> {
-  const paths = resolveLibraryPaths(options)
+  const paths = resolveLibraryPaths()
   const location = join(paths.libraryDir, installId)
   if (!INSTALL_ID.test(installId)) {
     return { installId, location, removed: false, issue: { code: 'not-managed', message: `"${installId}" is not a library install id` } }
@@ -292,7 +265,6 @@ interface InstallFailure {
 }
 
 async function installCandidate(
-  options: LibraryOptions,
   tree: SourceTree,
   candidate: ResolvedCandidate,
   selection: SkillImportSelection,
@@ -325,7 +297,7 @@ async function installCandidate(
       },
     }
   }
-  const paths = resolveLibraryPaths(options)
+  const paths = resolveLibraryPaths()
   try {
     await mkdir(paths.libraryDir, { recursive: true })
     await mkdir(paths.stagingDir, { recursive: true })
@@ -335,8 +307,8 @@ async function installCandidate(
   const stage = join(paths.stagingDir, `${name}.${scratchName()}.stage`)
   try {
     const written = await stageCandidate(stage, candidate, name, description)
-    const now = (options.now ?? (() => new Date))().toISOString()
-    const installId = replaced?.installId ?? await freshInstallId(paths.libraryDir, name, options)
+    const now = new Date().toISOString()
+    const installId = replaced?.installId ?? await freshInstallId(paths.libraryDir, name)
     const record: SkillInstallRecord = {
       schemaVersion: SKILL_MANIFEST_SCHEMA_VERSION,
       installId,
@@ -439,15 +411,11 @@ export async function publish(stage: string, location: string, trash: string | u
   await rm(trash, { recursive: true, force: true })
 }
 
-async function freshInstallId(libraryDir: string, name: string, options: LibraryOptions): Promise<string> {
+async function freshInstallId(libraryDir: string, name: string): Promise<string> {
   for (;;) {
-    const installId = `${name}-${hex(options)}`
+    const installId = `${name}-${randomBytes(4).toString('hex')}`
     if (await lstat(join(libraryDir, installId)).then(() => false, () => true)) return installId
   }
-}
-
-function hex(options: LibraryOptions): string {
-  return (options.randomHex ?? (() => randomBytes(4).toString('hex')))()
 }
 
 /** Unique scratch directory suffix for stages and trash; never part of an install id. */
@@ -455,7 +423,7 @@ function scratchName(): string {
   return `${process.pid}-${randomBytes(6).toString('hex')}`
 }
 
-async function loadSource(sourcePath: string, limits: LibraryLimits): Promise<SourceTree> {
+async function loadSource(sourcePath: string): Promise<SourceTree> {
   const path = resolve(sourcePath)
   let info
   try {
@@ -464,15 +432,15 @@ async function loadSource(sourcePath: string, limits: LibraryLimits): Promise<So
     return { kind: 'directory', path, files: [], problems: [{ code: 'source-missing', message: `the source cannot be read: ${String(error)}` }] }
   }
   if (info.isDirectory()) {
-    const walk = await walkDirectory(path, limits)
+    const walk = await walkDirectory(path)
     return { kind: 'directory', path, files: walk.files, problems: walk.problems }
   }
   const lower = path.toLowerCase()
   if (lower.endsWith('.zip')) {
-    if (info.size > limits.maxZipBytes) {
-      return { kind: 'zip', path, files: [], problems: [{ code: 'zip-too-large', message: `the archive exceeds ${limits.maxZipBytes} bytes` }] }
+    if (info.size > LIMITS.maxZipBytes) {
+      return { kind: 'zip', path, files: [], problems: [{ code: 'zip-too-large', message: `the archive exceeds ${LIMITS.maxZipBytes} bytes` }] }
     }
-    const contents = readZip(new Uint8Array(await readFile(path)), limits)
+    const contents = readZip(new Uint8Array(await readFile(path)), LIMITS)
     const files = contents.entries.map(entry => ({
       path: entry.path,
       bytes: entry.data.byteLength,
@@ -482,8 +450,8 @@ async function loadSource(sourcePath: string, limits: LibraryLimits): Promise<So
     return { kind: 'zip', path, files, problems: contents.problems }
   }
   if (lower.endsWith('.md')) {
-    if (info.size > limits.maxFileBytes) {
-      return { kind: 'markdown', path, files: [], problems: [{ code: 'too-large', message: `the file exceeds ${limits.maxFileBytes} bytes` }] }
+    if (info.size > LIMITS.maxFileBytes) {
+      return { kind: 'markdown', path, files: [], problems: [{ code: 'too-large', message: `the file exceeds ${LIMITS.maxFileBytes} bytes` }] }
     }
     return { kind: 'markdown', path, files: [fileEntry(path, basename(path), info.size)], problems: [] }
   }
@@ -510,7 +478,7 @@ interface WalkResult {
   problems: SkillIssue[]
 }
 
-async function walkDirectory(root: string, limits: LibraryLimits): Promise<WalkResult> {
+async function walkDirectory(root: string): Promise<WalkResult> {
   const files: SourceFile[] = []
   const problems: SkillIssue[] = []
   let total = 0
@@ -535,17 +503,17 @@ async function walkDirectory(root: string, limits: LibraryLimits): Promise<WalkR
       }
       if (!entry.isFile() || entry.name === SKILL_MANIFEST_FILE) continue
       const info = await lstat(childAbsolute)
-      if (info.size > limits.maxFileBytes) {
-        problems.push({ code: 'too-large', message: `file exceeds ${limits.maxFileBytes} bytes`, path: childRelative })
+      if (info.size > LIMITS.maxFileBytes) {
+        problems.push({ code: 'too-large', message: `file exceeds ${LIMITS.maxFileBytes} bytes`, path: childRelative })
         continue
       }
-      if (files.length >= limits.maxFiles) {
-        problems.push({ code: 'too-many-files', message: `the source holds more than ${limits.maxFiles} files`, path: childRelative })
+      if (files.length >= LIMITS.maxFiles) {
+        problems.push({ code: 'too-many-files', message: `the source holds more than ${LIMITS.maxFiles} files`, path: childRelative })
         return false
       }
       total += info.size
-      if (total > limits.maxTotalBytes) {
-        problems.push({ code: 'too-large', message: `the source exceeds ${limits.maxTotalBytes} bytes in total`, path: childRelative })
+      if (total > LIMITS.maxTotalBytes) {
+        problems.push({ code: 'too-large', message: `the source exceeds ${LIMITS.maxTotalBytes} bytes in total`, path: childRelative })
         return false
       }
       files.push(fileEntry(childAbsolute, childRelative, info.size))

@@ -21,7 +21,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$776f726b62656e6368496e73706563746f72 {
     accountUsage: (locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchUsage>>
     createProjectAgents: (sessionId: SessionId, locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<'created' | 'exists'>>
-    deleteSession: (sessionId: SessionId, signature: string) => Promise<RemoteResult<void>>
+    deleteSession: (sessionId: SessionId) => Promise<RemoteResult<void>>
     diff: (sessionId: SessionId, scope: DiffScope, path: string, signal?: AbortSignal) => Promise<RemoteResult<DiffResult>>
     globalMemory: (signal?: AbortSignal) => Promise<RemoteResult<WorkbenchGlobalMemory>>
     memory: (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchMemory>>
@@ -41,7 +41,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'skillManager/uninstall': (installId: string, signal?: AbortSignal) => Promise<RemoteResult<SkillUninstallOutcome>>
     'workbenchInspector/accountUsage': (locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchUsage>>
     'workbenchInspector/createProjectAgents': (sessionId: SessionId, locale: WorkbenchSeedLocale, signal?: AbortSignal) => Promise<RemoteResult<'created' | 'exists'>>
-    'workbenchInspector/deleteSession': (sessionId: SessionId, signature: string) => Promise<RemoteResult<void>>
+    'workbenchInspector/deleteSession': (sessionId: SessionId) => Promise<RemoteResult<void>>
     'workbenchInspector/diff': (sessionId: SessionId, scope: DiffScope, path: string, signal?: AbortSignal) => Promise<RemoteResult<DiffResult>>
     'workbenchInspector/globalMemory': (signal?: AbortSignal) => Promise<RemoteResult<WorkbenchGlobalMemory>>
     'workbenchInspector/memory': (sessionId: SessionId, signal?: AbortSignal) => Promise<RemoteResult<WorkbenchMemory>>
@@ -67,7 +67,7 @@ export declare const TYPERT_REMOTE: TypertRemoteInfo<{
   readonly 'skillManager/uninstall': TypertRemoteMethod<{ readonly 'installId': string }, SkillUninstallOutcome>
   readonly 'workbenchInspector/accountUsage': TypertRemoteMethod<{ readonly 'locale': WorkbenchSeedLocale }, WorkbenchUsage>
   readonly 'workbenchInspector/createProjectAgents': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'locale': WorkbenchSeedLocale }, 'created' | 'exists'>
-  readonly 'workbenchInspector/deleteSession': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'signature': string }, void>
+  readonly 'workbenchInspector/deleteSession': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, void>
   readonly 'workbenchInspector/diff': TypertRemoteMethod<{ readonly 'sessionId': SessionId; readonly 'scope': DiffScope; readonly 'path': string }, DiffResult>
   readonly 'workbenchInspector/globalMemory': TypertRemoteMethod<{  }, WorkbenchGlobalMemory>
   readonly 'workbenchInspector/memory': TypertRemoteMethod<{ readonly 'sessionId': SessionId }, WorkbenchMemory>
