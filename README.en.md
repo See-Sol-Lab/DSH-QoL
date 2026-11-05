@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="MIT"></a>
-  <img src="https://img.shields.io/badge/DeepSeek%20Harness-0.2.1-4d6bfe?style=flat-square" alt="DeepSeek Harness 0.2.1">
+  <img src="https://img.shields.io/badge/DeepSeek%20Harness-0.2.2-4d6bfe?style=flat-square" alt="DeepSeek Harness 0.2.2">
   <img src="https://img.shields.io/badge/Platform-Windows-0078d4?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/DSH-Plugin-8b5cf6?style=flat-square" alt="DSH plugin">
   <a href="https://doi.org/10.5281/zenodo.23600993"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.23600993-4a6fa5?style=flat-square" alt="DOI 10.5281/zenodo.23600993"></a>
@@ -24,7 +24,7 @@ The plugin grew out of [DeepSeekGUI](https://github.com/See-Sol-Lab/DeepSeekGUI)
 Since the official desktop app arrived, its direction has diverged from DeepSeekGUI's, and merging every official update by hand became more than one maintainer could keep up with. So DeepSeekGUI changed course:
 
 - **No more full merges of official updates.** DeepSeekGUI only receives basic maintenance.
-- **The features the official app doesn't have yet live on in this plugin**, installed into the official desktop app. DeepSeekGUI users who switch to the official app and add the QoL Pack get an experience close to DeepSeekGUI. Existing DeepSeekGUI users will move over to the official desktop app with the QoL Pack seamlessly through the rc.3 update, and their experience stays the same.
+- **The features the official app doesn't have yet live on in this plugin**, installed into the official desktop app. DeepSeekGUI users who switch to the official app and add the QoL Pack get an experience close to DeepSeekGUI. Existing DeepSeekGUI users can run the [migration helper](https://github.com/See-Sol-Lab/DeepSeekGUI/releases/latest) to move over in one go.
 - The plugin only touches what the official app opens to plugins and never patches official code, so it keeps working across official updates.
 
 ## Features
@@ -52,6 +52,18 @@ Since the official desktop app arrived, its direction has diverged from DeepSeek
 The two sandbox switches fix long-standing Windows issues in the official sandbox: workspaces permanently left with a Low integrity label (which breaks Electron, build tools and virtual environments for other tools too), and `SetNamedSecurityInfoW failed (Win32 5)` on every command when the workspace is on a drive other than C:.
 
 The full description of every feature, with screenshots, is in the [Chinese README](README.md). The plugin's interface follows the language of the official app.
+
+## Install and update
+
+Fully quit the official desktop app (tray → Quit), then run the command below. `dsh` is at `resources\runtime\cli\bin\dsh.cmd` in the official app's install folder.
+
+```bash
+dsh plugin --profile desktop add https://github.com/See-Sol-Lab/DSH-QoL/releases/download/v1.1.0/see-sol-lab-dsh-qol-1.1.0.tgz
+```
+
+1.0.x has no in-app updates, so update with this command once. After that, one click under Settings → QoL Pack → Version and updates is enough.
+
+1.1.0 removes Markdown export, the "Archived sessions" settings page and the balance display, because the official app now has its own.
 
 ## License
 

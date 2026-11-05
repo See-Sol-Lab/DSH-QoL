@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="MIT"></a>
-  <img src="https://img.shields.io/badge/DeepSeek%20Harness-0.2.1-4d6bfe?style=flat-square" alt="DeepSeek Harness 0.2.1">
+  <img src="https://img.shields.io/badge/DeepSeek%20Harness-0.2.2-4d6bfe?style=flat-square" alt="DeepSeek Harness 0.2.2">
   <img src="https://img.shields.io/badge/Platform-Windows-0078d4?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/DSH-Plugin-8b5cf6?style=flat-square" alt="DSH plugin">
   <a href="https://doi.org/10.5281/zenodo.23600993"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.23600993-4a6fa5?style=flat-square" alt="DOI 10.5281/zenodo.23600993"></a>
@@ -24,7 +24,7 @@
 官方推出自己的桌面端以后，官方桌面端的更新方向、开发理念与 DeepSeekGUI 有不小的分歧，而 DeepSeekGUI 由一个人维护，每次整体合并官方更新、再把自己的改动接回去，工作量越来越大，也越来越难跟上。所以 DeepSeekGUI 调整了方向：
 
 - **不再整体合并官方更新**。DeepSeekGUI 只做基础维护。
-- **把官方还没有的功能做成这个插件**，装进官方桌面端。DeepSeekGUI 的老用户换到官方桌面端、装上生活质量包，就能得到和 DeepSeekGUI 相近的使用体验。GUI的老用户将在rc3合并更新中直接无缝过渡到官方桌面端+QoL质量包。使用体验保持不变。
+- **把官方还没有的功能做成这个插件**，装进官方桌面端。DeepSeekGUI 的老用户换到官方桌面端、装上生活质量包，就能得到和 DeepSeekGUI 相近的使用体验。GUI 的老用户运行[迁移助手](https://github.com/See-Sol-Lab/DeepSeekGUI/releases/latest)，就能一步换到官方桌面端 + 生活质量包。
 - 插件只改官方开放给插件的部分，不改官方代码，所以官方更新以后插件照常可用，维护量小得多。
 
 如果你是第一次接触这个插件，下面的功能介绍会逐项说明它从哪些方面改善了官方桌面端的使用体验。
@@ -128,6 +128,18 @@
 - **应用内更新**：每天最多向 GitHub 查一次新版本（GitHub 会看到你的 IP，可在设置里关掉），有新版本时提示，点一下就下载安装，不用去 GitHub 手动装。下载不走系统代理，靠代理访问 GitHub 的话需要开 TUN 模式。
 - **系统通知**：需要审批、助手在提问、后台工作完成或失败时弹 Windows 系统通知；窗口在前台且正看着那个会话时不打扰，点通知回到那个会话。
 - **看图提示**：每一步告诉助手当前模型能不能看图。换成纯文本模型后，你让它看网页或图片，它会先问你要不要换模型，而不是反复截图又读不到。
+
+## 安装与更新
+
+完全退出官方桌面端（托盘 → 退出）后运行下面的命令，`dsh` 在官方桌面端安装目录的 `resources\runtime\cli\bin\dsh.cmd`：
+
+```bash
+dsh plugin --profile desktop add https://github.com/See-Sol-Lab/DSH-QoL/releases/download/v1.1.0/see-sol-lab-dsh-qol-1.1.0.tgz
+```
+
+1.0.x 没有应用内更新，要用这条命令手动更新一次，以后在「设置 → 生活质量包 → 版本与更新」里点一下就行。
+
+1.1.0 下架了导出 Markdown、「已归档的会话」设置页和余额显示，因为官方已经有了自己的。
 
 ## 开发
 
