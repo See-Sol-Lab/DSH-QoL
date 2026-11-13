@@ -58,12 +58,12 @@ The full description of every feature, with screenshots, is in the [Chinese READ
 Fully quit the official desktop app (tray → Quit), then run the command below. `dsh` is at `resources\runtime\cli\bin\dsh.cmd` in the official app's install folder.
 
 ```bash
-dsh plugin --profile desktop add https://github.com/See-Sol-Lab/DSH-QoL/releases/download/v1.1.1/see-sol-lab-dsh-qol-1.1.1.tgz
+dsh plugin --profile desktop add https://github.com/See-Sol-Lab/DSH-QoL/releases/download/v1.2.0/see-sol-lab-dsh-qol-1.2.0.tgz
 ```
 
 1.0.x has no in-app updates, so update with this command once. After that, one click under Settings → QoL Pack → Version and updates is enough.
 
-1.1.0 removes Markdown export and the balance display, because the official app now has its own. The "Archived sessions" settings page was removed in 1.1.0 too; the official sidebar filter is awkward to use, so the next release brings it back.
+1.1.0 removes Markdown export and the balance display, because the official app now has its own. The "Archived sessions" settings page was removed in 1.1.0 too; the official sidebar filter is awkward to use, so 1.2.0 brings it back.
 
 ## License
 
