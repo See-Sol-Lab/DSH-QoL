@@ -37,7 +37,7 @@ Since the official desktop app arrived, its direction has diverged from DeepSeek
 | Privacy and reporting switches | Settings → QoL Pack → Privacy | All four reports off |
 | Workbench: Changes, Git, Project, Memory | Tabs beside the conversation | On |
 | Project and global memory | Memory tab; Settings → Global memory | On |
-| Delete archived sessions | Menu of an archived session | On |
+| Archived sessions | Settings → Archived sessions; session menu | On |
 | Local skill library | Settings → Skill; Project tab | On |
 | Usage statistics | Settings → Usage | On |
 | Smooth streaming text | Conversation | On |
@@ -63,7 +63,7 @@ dsh plugin --profile desktop add https://github.com/See-Sol-Lab/DSH-QoL/releases
 
 1.0.x has no in-app updates, so update with this command once. After that, one click under Settings → QoL Pack → Version and updates is enough.
 
-1.1.0 removes Markdown export, the "Archived sessions" settings page and the balance display, because the official app now has its own.
+1.1.0 removes Markdown export and the balance display, because the official app now has its own. The "Archived sessions" settings page was removed in 1.1.0 too; the official sidebar filter is awkward to use, so the next release brings it back.
 
 ## License
 

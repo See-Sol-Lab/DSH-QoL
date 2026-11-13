@@ -25,9 +25,10 @@ import { NS_TOOLS, en as toolsEn, zh as toolsZh, type ToolsKey } from './locales
 import { NS_INSPECTOR, en as inspectorEn, zh as inspectorZh, type InspectorKey } from './locales-inspector.ts'
 import { NS_MEMORY, en as memoryEn, zh as memoryZh, type MemoryKey } from './locales-memory.ts'
 import { en as workbenchEn, zh as workbenchZh, type WorkbenchKey } from './locales-workbench.ts'
+import { ArchivedSessionsSection } from './ArchivedSessionsSection.tsx'
 import { NS_USAGE, UsageSection, en as usageEn, zh as usageZh, type UsageKey } from './UsageSection.tsx'
 import { createSessionDeleter, DeleteSessionDialog, DeleteSessionMenuItem } from './session-delete.tsx'
-// Type-only: the session menu slot.
+// Type-only: ctx.uiWorkspace（恢复与打开会话）and the session menu slot.
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 // Type-only: the shell.overlay slot.
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
@@ -59,11 +60,13 @@ const MEMORY_VIEW_ORDER = 23
 const MEMORY_SECTION_ORDER = 46
 /** 用量分区：生活质量包（45）之前。 */
 const USAGE_SECTION_ORDER = 44
+/** 已归档会话分区：排在官方分区之后、我们其他分区之前。 */
+const ARCHIVED_SECTION_ORDER = 30
 /** 会话菜单里「删除」的位置（只对已归档的行出现）。 */
 const DELETE_MENU_ORDER = 500
 
 /** 工作台需要的官方服务。 */
-export const workbenchInject = ['slots', 'locale', 'remote', 'sessions', 'conversation'] as const
+export const workbenchInject = ['slots', 'locale', 'remote', 'sessions', 'conversation', 'uiWorkspace'] as const
 
 /**
  * 挂上工作台：远程客户端、文案、三个标签、全局记忆分区与工具卡片。
@@ -141,9 +144,23 @@ export async function applyWorkbench(ctx: Context): Promise<void> {
         inject: () => ({ load: loadUsage }),
       }, UsageSection))
 
-    // 删除已归档会话：官方的归档查看与恢复在侧栏筛选里，但没有删除。会话菜单的「删除」只对已归档的行
-    // 出现，先确认；由 Host inspector 完成，只删已归档且没在加载的会话。
+    // 已归档的会话：官方只在侧栏「视图选项」筛选里混着显示，也不能删除。设置里单列一页，每行可恢复并
+    // 打开、可删除；会话菜单的「删除」只对已归档的行出现。删除先确认，由 Host inspector 完成，只删已归档
+    // 且没在加载的会话。
     const deleteSession = createSessionDeleter(inspector, () => ctx.locale.bind('dsh.qol.workbench')('sessionDelete.busy'))
+    scoped.slots.inject('settings.section', () =>
+      scoped.slots.register({
+        name: 'settings.section',
+        id: 'dsh-qol-archived',
+        order: ARCHIVED_SECTION_ORDER,
+        locale: 'dsh.qol.workbench',
+        label: () => ctx.locale.bind('dsh.qol.workbench')('archived.nav'),
+        inject: () => ({
+          restore: (sessionId: SessionId) => ctx.uiWorkspace.unarchiveSession(sessionId),
+          open: (sessionId: SessionId): void => { ctx.uiWorkspace.openSession(sessionId) },
+          deleteSession,
+        }),
+      }, ArchivedSessionsSection))
     scoped.slots.inject('sidebar.workspaces.session.menu.item', () =>
       scoped.slots.register({
         name: 'sidebar.workspaces.session.menu.item',
