@@ -134,7 +134,7 @@
 完全退出官方桌面端（托盘 → 退出）后运行下面的命令，`dsh` 在官方桌面端安装目录的 `resources\runtime\cli\bin\dsh.cmd`：
 
 ```bash
-dsh plugin --profile desktop add https://github.com/See-Sol-Lab/DSH-QoL/releases/download/v1.1.0/see-sol-lab-dsh-qol-1.1.0.tgz
+dsh plugin --profile desktop add https://github.com/See-Sol-Lab/DSH-QoL/releases/download/v1.1.1/see-sol-lab-dsh-qol-1.1.1.tgz
 ```
 
 1.0.x 没有应用内更新，要用这条命令手动更新一次，以后在「设置 → 生活质量包 → 版本与更新」里点一下就行。

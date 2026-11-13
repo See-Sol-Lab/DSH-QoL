@@ -1,7 +1,7 @@
 {
   "name": "@see-sol-lab/dsh-qol",
   "description": "DSH 生活质量包：给 DeepSeek Harness 官方桌面端补上体验细节的插件（源自 DeepSeekGUI）——沙箱 Low 标签与工作区授权自动修复、DeepSeekGUI 皮肤、四项上报默认关、改动/Git/项目管理/记忆四个视图、项目与全局记忆、删除已归档会话、本地技能库、用量统计、流式平滑、Git 与 PR 工具、应用内更新、系统通知。",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "license": "MIT",
   "private": true,
   "type": "module",

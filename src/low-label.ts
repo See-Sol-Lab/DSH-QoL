@@ -93,7 +93,9 @@ export const POWERSHELL = join(process.env.SystemRoot ?? 'C:\\Windows', 'System3
  */
 export function psArgs(name: string, text: string, args: readonly string[]): string[] {
   const script = join(tmpdir(), name)
-  writeFileSync(script, text, 'utf8')
+  // 必须带 BOM：Windows PowerShell 5.1 读无 BOM 的 .ps1 按系统 ANSI 代码页解码，
+  // 中文系统（936）下中文注释会吞掉换行，脚本直接解析失败（#1）。
+  writeFileSync(script, `﻿${text}`, 'utf8')
   return ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script, ...args]
 }
 
